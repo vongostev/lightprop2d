@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from dataclasses import dataclass
 import numpy as np
 from scipy import fftpack
 import pyfftw
@@ -21,60 +22,57 @@ def square_slits(y, x, wide_x, wide_y, slits_distance, x0=0, y0=0):
     return slit1 | slit2
 
 
+@dataclass
 class Beam2D:
 
-    def __init__(self, init_field, wl0, Lx, Ly, Nx, Ny, from_array=False):
+    Lx: float
+    Ly: float
+    Nx: int
+    Ny: int
+    wl: float
+    z: float = 0.
+    init_field: np.ndarray = None
+    init_field_gen: object = None
 
-        self.Lx = Lx
-        self.Ly = Ly
-        self.Nx = Nx
-        self.Ny = Ny
+    def __post_init__(self):
 
         # create grid
-        xxgrid, yygrid = np.mgrid[-Nx / 2:Nx / 2, -Ny / 2:Ny / 2]
-        self.X = xxgrid * Lx / Nx
-        self.Y = yygrid * Ly / Ny
+        xxgrid, yygrid = np.mgrid[-self.Nx / 2:self.Nx / 2,
+                                  -self.Ny / 2:self.Ny / 2]
+        self.X = xxgrid * self.Lx / self.Nx
+        self.Y = yygrid * self.Ly / self.Ny
 
-        self.Kx = self._k_grid(Lx, Nx)[:, np.newaxis]
-        self.Ky = self._k_grid(Ly, Ny)
+        self.Kx = self._k_grid(self.Lx, self.Nx)[:, np.newaxis]
+        self.Ky = self._k_grid(self.Ly, self.Ny)
 
-        self.z = 0.
-        self.wl0 = wl0
-        self.k0 = 2. * np.pi / wl0
+        self.k0 = 2. * np.pi / self.wl
 
-        self._check_input()
-
-        if not from_array:
-            self._construct_profile(init_field)
-        else:
-            self._adapt_profile(init_field)
-
-    def _k_grid(self, l, n):
-        return 2 * np.pi / l * np.concatenate(
-            (np.arange(0, n // 2 + 1), np.arange(- n // 2 + 1, 0)))
-
-    def _check_input(self):
-        kx_cryt = np.trunc(self.Lx / self.wl0)
+        kx_cryt = np.trunc(self.Lx / self.wl)
         if self.Nx / 2 > kx_cryt:
             raise ValueError(
-                "Critical Kx (%d) must be bigger than Nx / 2 (%d)" % (kx_cryt, self.Nx / 2))
+                f"Critical Kx {kx_cryt:d} must be bigger than {self.Nx // 2}")
 
-        ky_cryt = np.trunc(self.Ly / self.wl0)
+        ky_cryt = np.trunc(self.Ly / self.wl)
         if self.Ny / 2 > ky_cryt:
             raise ValueError(
-                "Critical Ky (%d) must be bigger than Ny / 2 (%d)" % (ky_cryt, self.Ny / 2))
+                f"Critical Ky {ky_cryt:d} must be bigger than {self.Ny // 2}")
 
-    def _construct_profile(self, f):
-        self.xyprofile = f(self.X, self.Y)
+        if self.init_field_gen is not None:
+            self.xyprofile = self.init_field_gen(self.X, self.Y)
+        elif self.init_field is not None:
+            self.xyprofile = self.init_field
+        else:
+            raise ValueError(
+                "Init field data is None: " +
+                "'init_field_gen' must be a function or 'init_field' must be an array.")
+        self._construct_profile()
+
+    def _k_grid(self, L, N):
+        return 2 * np.pi / L * np.concatenate(
+            (np.arange(0, N // 2 + 1), np.arange(- N // 2 + 1, 0)))
+
+    def _construct_profile(self):
         self.kprofile = fftpack.fft(self.xyprofile)
-
-        self.xyfprofile = self.xyprofile[:, :]
-        self.kfprofile = self.kprofile[:, :]
-
-    def _adapt_profile(self, init_field):
-        self.xyprofile = init_field
-        self.kprofile = fftpack.fft(init_field)
-
         self.xyfprofile = self.xyprofile[:, :]
         self.kfprofile = self.kprofile[:, :]
 
@@ -87,7 +85,7 @@ class Beam2D:
         self.xyfprofile = fftpack.ifft2(self.kfprofile)
 
     def propagate(self, z):
-        self.z = np.float64(z)
+        self.z = z * 1.
 
         kzz = np.real(np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2) * z)
         delta = kzz - 2. * np.pi * np.trunc(kzz / 2. / np.pi)
@@ -100,5 +98,5 @@ class Beam2D:
                                   (self.X ** 2 + self.Y ** 2) * self.k0 / 2 / f)
 
     def __repr__(self):
-        return "Beam (%d, %.3f) (%d, %.3f) <wl0=%.3fmic, z=%.3fcm>" % \
-            (self.Nx, self.Lx, self.Ny, self.Ly, self.wl0 * 10**4, self.z)
+        return (f"Beam {self.Nx:d}x{self.Ny:d} points {self.Lx:.3g}x{self.Ly:.3g} cm " +
+                f"<wl={self.wl * 1e7:.3g} nm, z={self.z:.3g} cm>")

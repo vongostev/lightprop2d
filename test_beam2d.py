@@ -35,7 +35,7 @@ def beam_profile(x, y, A0, rho0):
 def bp(x, y): return beam_profile(x, y, A0, rho0)
 
 
-b = Beam2D(bp, wl0, Lx, Ly, Nx, Ny)
+b = Beam2D(init_field_gen=bp, wl=wl0, Lx=Lx, Ly=Ly, Nx=Nx, Ny=Ny)
 b.propagate(z)
 print(b)
 
