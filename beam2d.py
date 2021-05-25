@@ -37,10 +37,9 @@ class Beam2D:
     def __post_init__(self):
 
         # create grid
-        xxgrid, yygrid = np.mgrid[-self.Nx / 2:self.Nx / 2,
-                                  -self.Ny / 2:self.Ny / 2]
-        self.X = xxgrid * self.Lx / self.Nx
-        self.Y = yygrid * self.Ly / self.Ny
+        self.X = np.arange(-self.Nx / 2, self.Nx / 2, 1) * self.Lx / self.Nx
+        self.Y = np.arange(-self.Ny / 2, self.Ny / 2,
+                           1).reshape((-1, 1)) * self.Ly / self.Ny
 
         self.Kx = self._k_grid(self.Lx, self.Nx)[:, np.newaxis]
         self.Ky = self._k_grid(self.Ly, self.Ny)
@@ -58,9 +57,9 @@ class Beam2D:
                 f"Critical Ky {ky_cryt:d} must be bigger than {self.Ny // 2}")
 
         if self.init_field_gen is not None:
-            self.xyprofile = self.init_field_gen(self.X, self.Y)
+            self.xyprofile = np.complex128(self.init_field_gen(self.X, self.Y))
         elif self.init_field is not None:
-            self.xyprofile = self.init_field
+            self.xyprofile = np.complex128(self.init_field)
         else:
             raise ValueError(
                 "Init field data is None: " +
@@ -68,11 +67,10 @@ class Beam2D:
         self._construct_profile()
 
     def _k_grid(self, L, N):
-        return 2 * np.pi / L * np.concatenate(
-            (np.arange(0, N // 2 + 1), np.arange(- N // 2 + 1, 0)))
+        return 2 * np.pi / L * fftpack.fftfreq(N)
 
     def _construct_profile(self):
-        self.kprofile = fftpack.fft(self.xyprofile)
+        self.kprofile = fftpack.fft2(self.xyprofile)
         self.xyfprofile = self.xyprofile[:, :]
         self.kfprofile = self.kprofile[:, :]
 
@@ -85,10 +83,10 @@ class Beam2D:
         self.xyfprofile = fftpack.ifft2(self.kfprofile)
 
     def propagate(self, z):
-        self.z = z * 1.
+        self.z += z * 1.
 
-        kzz = np.real(np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2) * z)
-        delta = kzz - 2. * np.pi * np.trunc(kzz / 2. / np.pi)
+        kz = np.real(np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2))
+        delta = kz * z - 2. * np.pi * np.trunc(kz * z / 2. / np.pi)
 
         self.kfprofile *= np.exp(1.j * delta)
         self.xyfprofile = fftpack.ifft2(self.kfprofile)
