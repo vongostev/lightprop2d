@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import numpy as np
 from scipy import fftpack
+from scipy.signal import peak_widths
 import pyfftw
 
 fftpack = pyfftw.interfaces.scipy_fftpack
@@ -9,12 +10,12 @@ pyfftw.interfaces.cache.enable()
 
 
 @np.vectorize
-def beam_profile(x, y):
+def plane_wave(x, y):
     return 1  # np.random.randint(GRAY)
 
 
 @np.vectorize
-def square_slits(y, x, wide_x, wide_y, slits_distance, x0=0, y0=0):
+def square_slits(x, y, wide_x, wide_y, slits_distance, x0=0, y0=0):
     l = slits_distance
 
     slit1 = (abs(x - x0 - l) < (wide_x / 2)) & (abs(y - y0) < (wide_y / 2))
@@ -37,12 +38,14 @@ class Beam2D:
     def __post_init__(self):
 
         # create grid
-        self.X = np.arange(-self.Nx / 2, self.Nx / 2, 1) * self.Lx / self.Nx
+        self.dX = self.Lx / self.Nx
+        self.dY = self.Ly / self.Ny
+        self.X = np.arange(-self.Nx / 2, self.Nx / 2, 1) * self.dX
         self.Y = np.arange(-self.Ny / 2, self.Ny / 2,
-                           1).reshape((-1, 1)) * self.Ly / self.Ny
+                           1)[:, np.newaxis] * self.dY
 
-        self.Kx = self._k_grid(self.Lx, self.Nx)[:, np.newaxis]
-        self.Ky = self._k_grid(self.Ly, self.Ny)
+        self.Kx = self._k_grid(self.dX, self.Nx)
+        self.Ky = self._k_grid(self.dY, self.Ny)[:, np.newaxis]
 
         self.k0 = 2. * np.pi / self.wl
 
@@ -66,8 +69,8 @@ class Beam2D:
                 "'init_field_gen' must be a function or 'init_field' must be an array.")
         self._construct_profile()
 
-    def _k_grid(self, L, N):
-        return 2 * np.pi / L * fftpack.fftfreq(N)
+    def _k_grid(self, dL, N):
+        return fftpack.fftfreq(N, d=dL)
 
     def _construct_profile(self):
         self.kprofile = fftpack.fft2(self.xyprofile)
@@ -86,14 +89,24 @@ class Beam2D:
         self.z += z * 1.
 
         kz = np.real(np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2))
-        delta = kz * z - 2. * np.pi * np.trunc(kz * z / 2. / np.pi)
-
-        self.kfprofile *= np.exp(1.j * delta)
+        # delta = kz * z - 2. * np.pi * np.trunc(kz * z / 2. / np.pi)
+        self.kfprofile *= np.exp(1.j * kz * z)
         self.xyfprofile = fftpack.ifft2(self.kfprofile)
 
     def lens(self, f):
         self.xyfprofile *= np.exp(1.j *
                                   (self.X ** 2 + self.Y ** 2) * self.k0 / 2 / f)
+        self.kfprofile = fftpack.fft2(self.xyfprofile)
+
+    def FWHM(self):
+        xcentral_profile = np.abs(self.xyfprofile[self.Ny // 2, :])
+        xwidths, _, _, _ = peak_widths(xcentral_profile, peaks=[self.Nx // 2])
+        ycentral_profile = np.abs(self.xyfprofile[:, self.Nx // 2])
+        ywidths, _, _, _ = peak_widths(ycentral_profile, peaks=[self.Ny // 2])
+        return xwidths[0] * self.dX, ywidths[0] * self.dY
+
+    def I0(self):
+        return np.abs(self.xyfprofile[self.Ny // 2, self.Nx // 2]) ** 2 * 3e10 / 8 / np.pi
 
     def __repr__(self):
         return (f"Beam {self.Nx:d}x{self.Ny:d} points {self.Lx:.3g}x{self.Ly:.3g} cm " +
