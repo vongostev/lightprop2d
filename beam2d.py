@@ -13,7 +13,7 @@ from scipy.signal import peak_widths
 
 try:
     import pyfftw
-except:
+except ImportError:
     print("ImportError: PyFFTW didn't find, scipy.fftpack is used.")
 else:
     print("PyFFTW is used to patch scipy.fftpack")
@@ -23,7 +23,12 @@ else:
 
 @np.vectorize
 def plane_wave(x, y):
-    return 1  # np.random.randint(GRAY)
+    return 1
+
+
+@np.vectorize
+def random_wave(x, y):
+    return np.random.random()
 
 
 @np.vectorize
@@ -135,4 +140,5 @@ class Beam2D:
 
     def __repr__(self):
         return (f"Beam {self.Nx:d}x{self.Ny:d} points {self.Lx:.3g}x{self.Ly:.3g} cm " +
+                f"<wl={self.wl * 1e7:.3g} nm, z={self.z:.3g} cm>")
                 f"<wl={self.wl * 1e7:.3g} nm, z={self.z:.3g} cm>")
