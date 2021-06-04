@@ -1,12 +1,24 @@
 # -*- coding: utf-8 -*-
+"""
+The algorithm based on the paper
+Delen, N., & Hooker, B. (1998).
+Free-space beam propagation between arbitrarily oriented planes
+based on full diffraction theory: a fast Fourier transform approach.
+JOSA A, 15(4), 857-867.
+"""
 from dataclasses import dataclass
 import numpy as np
 from scipy import fftpack
 from scipy.signal import peak_widths
-import pyfftw
 
-fftpack = pyfftw.interfaces.scipy_fftpack
-pyfftw.interfaces.cache.enable()
+try:
+    import pyfftw
+except:
+    print("ImportError: PyFFTW didn't find, scipy.fftpack is used.")
+else:
+    print("PyFFTW is used to patch scipy.fftpack")
+    fftpack = pyfftw.interfaces.scipy_fftpack
+    pyfftw.interfaces.cache.enable()
 
 
 @np.vectorize
@@ -15,12 +27,28 @@ def plane_wave(x, y):
 
 
 @np.vectorize
-def square_slits(x, y, wide_x, wide_y, slits_distance, x0=0, y0=0):
-    l = slits_distance
+def gaussian_beam(x, y, A0, rho0):
+    return A0 * np.exp(- (x ** 2 + y ** 2) / 2 / rho0 ** 2)
 
-    slit1 = (abs(x - x0 - l) < (wide_x / 2)) & (abs(y - y0) < (wide_y / 2))
-    slit2 = (abs(x - x0 + l) < (wide_x / 2)) & (abs(y - y0) < (wide_y / 2))
-    return slit1 | slit2
+
+def round_hole(x, y, R, x0=0, y0=0):
+    d = gaussian_beam(x - x0, y - y0, 1, R)
+    d = d >= 1 / np.exp(0.5)
+    return np.array(d, dtype=int)
+
+
+@np.vectorize
+def rectangle_hole(x, y, dx, dy, x0=0, y0=0):
+    return (abs(x - x0) < (dx / 2)) & (abs(y - y0) < (dy / 2))
+
+
+def square_hole(x, y, d, x0=0, y0=0):
+    return rectangle_hole(x, y, d, d, x0, y0)
+
+
+def square_slits(x, y, d, slits_distance, x0=0, y0=0):
+    l = slits_distance / 2
+    return square_hole(x, y, d, x0 - l, y0) | square_hole(x, y, d, x0 + l, y0)
 
 
 @dataclass
@@ -37,17 +65,17 @@ class Beam2D:
 
     def __post_init__(self):
 
-        # create grid
         self.dX = self.Lx / self.Nx
         self.dY = self.Ly / self.Ny
         self.X = np.arange(-self.Nx / 2, self.Nx / 2, 1) * self.dX
         self.Y = np.arange(-self.Ny / 2, self.Ny / 2,
                            1)[:, np.newaxis] * self.dY
 
+        self.k0 = 1 / self.wl
         self.Kx = self._k_grid(self.dX, self.Nx)
         self.Ky = self._k_grid(self.dY, self.Ny)[:, np.newaxis]
-
-        self.k0 = 2. * np.pi / self.wl
+        self.Kz = 2 * np.pi * \
+            np.abs(np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2))
 
         kx_cryt = np.trunc(self.Lx / self.wl)
         if self.Nx / 2 > kx_cryt:
@@ -87,10 +115,7 @@ class Beam2D:
 
     def propagate(self, z):
         self.z += z * 1.
-
-        kz = np.real(np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2))
-        # delta = kz * z - 2. * np.pi * np.trunc(kz * z / 2. / np.pi)
-        self.kfprofile *= np.exp(1.j * kz * z)
+        self.kfprofile *= np.exp(- 1.j * self.Kz * z)
         self.xyfprofile = fftpack.ifft2(self.kfprofile)
 
     def lens(self, f):
@@ -98,14 +123,14 @@ class Beam2D:
                                   (self.X ** 2 + self.Y ** 2) * self.k0 / 2 / f)
         self.kfprofile = fftpack.fft2(self.xyfprofile)
 
-    def FWHM(self):
+    def gaussian_fwhm(self):
         xcentral_profile = np.abs(self.xyfprofile[self.Ny // 2, :])
         xwidths, _, _, _ = peak_widths(xcentral_profile, peaks=[self.Nx // 2])
         ycentral_profile = np.abs(self.xyfprofile[:, self.Nx // 2])
         ywidths, _, _, _ = peak_widths(ycentral_profile, peaks=[self.Ny // 2])
         return xwidths[0] * self.dX, ywidths[0] * self.dY
 
-    def I0(self):
+    def central_intensity(self):
         return np.abs(self.xyfprofile[self.Ny // 2, self.Nx // 2]) ** 2 * 3e10 / 8 / np.pi
 
     def __repr__(self):
