@@ -72,15 +72,15 @@ class Beam2D:
 
         self.dX = self.Lx / self.Nx
         self.dY = self.Ly / self.Ny
-        self.X = np.arange(-self.Nx / 2, self.Nx / 2, 1) * self.dX
-        self.Y = np.arange(-self.Ny / 2, self.Ny / 2,
-                           1)[:, np.newaxis] * self.dY
+        self.X = np.arange(-self.Nx // 2, self.Nx // 2, 1) * self.dX
+        self.Y = np.arange(
+            -self.Ny // 2, self.Ny // 2, 1)[:, np.newaxis] * self.dY
 
         self.k0 = 1 / self.wl
         self.Kx = self._k_grid(self.dX, self.Nx)
         self.Ky = self._k_grid(self.dY, self.Ny)[:, np.newaxis]
-        self.Kz = 2 * np.pi * \
-            np.abs(np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2))
+        self.Kz = 2 * np.pi * np.abs(
+            np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2))
 
         kx_cryt = np.trunc(self.Lx / self.wl)
         if self.Nx / 2 > kx_cryt:
@@ -124,8 +124,8 @@ class Beam2D:
         self.xyfprofile = fftpack.ifft2(self.kfprofile)
 
     def lens(self, f):
-        self.xyfprofile *= np.exp(1.j *
-                                  (self.X ** 2 + self.Y ** 2) * self.k0 / 2 / f)
+        self.xyfprofile *= \
+            np.exp(1.j * (self.X ** 2 + self.Y ** 2) * self.k0 / 2 / f)
         self.kfprofile = fftpack.fft2(self.xyfprofile)
 
     def gaussian_fwhm(self):
@@ -140,5 +140,4 @@ class Beam2D:
 
     def __repr__(self):
         return (f"Beam {self.Nx:d}x{self.Ny:d} points {self.Lx:.3g}x{self.Ly:.3g} cm " +
-                f"<wl={self.wl * 1e7:.3g} nm, z={self.z:.3g} cm>")
                 f"<wl={self.wl * 1e7:.3g} nm, z={self.z:.3g} cm>")
