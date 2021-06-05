@@ -8,10 +8,11 @@ Created on Fri Jun  4 17:33:23 2021
 Дифракция гауссова пучка
 Ахманов С.А., Никитин С.Ю. Физическая оптика. Лекция 14
 """
+import __init__
 import numpy as np
 import matplotlib.pyplot as plt
 
-from beam2d import Beam2D, gaussian_beam
+from lightprop2d import Beam2D, gaussian_beam
 
 # XY grid dimensions
 Nx = Ny = 200
@@ -44,7 +45,8 @@ for z in z_grid:
     intensities.append(beam.central_intensity())
 
 z_normalized = z_grid / 2 / np.pi / beam.k0 / R ** 2
-plt.plot(z_normalized, np.array(intensities) / (3e10 / 8 / np.pi), label='Calc')
+plt.plot(z_normalized, np.array(intensities) /
+         (3e10 / 8 / np.pi), label='Calc')
 plt.plot(z_normalized, 1 / (1 + z_normalized ** 2),
          '--', label='Theory')
 plt.xlabel(r'$z / z_d$')

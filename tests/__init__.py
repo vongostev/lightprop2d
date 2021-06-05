@@ -2,5 +2,9 @@
 """
 Created on Sat Jun  5 01:18:12 2021
 
-@author: von.gostev
+@author: Pavel Gostev
 """
+
+import os
+import sys
+sys.path.append(os.path.abspath('..'))
