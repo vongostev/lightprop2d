@@ -39,6 +39,7 @@ z_grid = np.arange(14, 200) * dz
 intensities = []
 
 beam.propagate(z_grid[0])
+# beam.lens(2)
 for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)

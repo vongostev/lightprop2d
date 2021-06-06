@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import fftpack
 from scipy.signal import peak_widths
+from scipy.linalg import lstsq
 
 try:
     import pyfftw
@@ -59,10 +60,8 @@ def square_slits(x, y, d, slits_distance, x0=0, y0=0):
 @dataclass
 class Beam2D:
 
-    Lx: float
-    Ly: float
-    Nx: int
-    Ny: int
+    L: float
+    N: int
     wl: float
     z: float = 0.
     init_field: np.ndarray = None
@@ -70,27 +69,20 @@ class Beam2D:
 
     def __post_init__(self):
 
-        self.dX = self.Lx / self.Nx
-        self.dY = self.Ly / self.Ny
-        self.X = np.arange(-self.Nx // 2, self.Nx // 2, 1) * self.dX
-        self.Y = np.arange(
-            -self.Ny // 2, self.Ny // 2, 1)[:, np.newaxis] * self.dY
+        self.dL = self.L / self.N
+        self.X = np.arange(-self.N // 2, self.N // 2, 1) * self.dL
+        self.Y = self.X.reshape((-1, 1))
 
         self.k0 = 1 / self.wl
-        self.Kx = self._k_grid(self.dX, self.Nx)
-        self.Ky = self._k_grid(self.dY, self.Ny)[:, np.newaxis]
+        self.Kx = self._k_grid(self.dL, self.N)
+        self.Ky = self.Kx.reshape((-1, 1))
         self.Kz = 2 * np.pi * np.abs(
             np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2))
 
-        kx_cryt = np.trunc(self.Lx / self.wl)
-        if self.Nx / 2 > kx_cryt:
+        k_cryt = np.trunc(self.L / self.wl)
+        if self.N / 2 > k_cryt:
             raise ValueError(
-                f"Critical Kx {kx_cryt:d} must be bigger than {self.Nx // 2}")
-
-        ky_cryt = np.trunc(self.Ly / self.wl)
-        if self.Ny / 2 > ky_cryt:
-            raise ValueError(
-                f"Critical Ky {ky_cryt:d} must be bigger than {self.Ny // 2}")
+                f"Critical K⟂ {k_cryt:d} must be bigger than {self.N // 2}")
 
         if self.init_field_gen is not None:
             self.xyprofile = np.complex128(self.init_field_gen(self.X, self.Y))
@@ -129,15 +121,46 @@ class Beam2D:
         self.kfprofile = fftpack.fft2(self.xyfprofile)
 
     def gaussian_fwhm(self):
-        xcentral_profile = np.abs(self.xyfprofile[self.Ny // 2, :])
-        xwidths, _, _, _ = peak_widths(xcentral_profile, peaks=[self.Nx // 2])
-        ycentral_profile = np.abs(self.xyfprofile[:, self.Nx // 2])
-        ywidths, _, _, _ = peak_widths(ycentral_profile, peaks=[self.Ny // 2])
+        xcentral_profile = np.abs(self.xyfprofile[self.N // 2, :])
+        xwidths, _, _, _ = peak_widths(xcentral_profile, peaks=[self.N // 2])
+        ycentral_profile = np.abs(self.xyfprofile[:, self.N // 2])
+        ywidths, _, _, _ = peak_widths(ycentral_profile, peaks=[self.N // 2])
         return xwidths[0] * self.dX, ywidths[0] * self.dY
 
     def central_intensity(self):
-        return np.abs(self.xyfprofile[self.Ny // 2, self.Nx // 2]) ** 2 * 3e10 / 8 / np.pi
+        return np.abs(self.xyfprofile[self.N // 2, self.N // 2]) ** 2 * 3e10 / 8 / np.pi
+
+    def _expand_basis(self, modes_list):
+        Nb = np.sqrt(len(modes_list[0])).astype(int)
+        if Nb != self.N:
+            expanded_modes_list = []
+            dN = (self.N - Nb) // 2
+            for m in modes_list:
+                me = np.zeros((self.N, self.N))
+                me[dN:self.N - dN, dN:self.N - dN] = m.reshape((Nb, Nb))
+                expanded_modes_list.append(np.ravel(me))
+            return expanded_modes_list
+        return modes_list
+
+    def deconstruct_by_modes(self, modes_list):
+        Nb = np.sqrt(len(modes_list[0])).astype(int)
+        dN = (self.N - Nb) // 2
+        for m in modes_list:
+            m = np.ravel(m).reshape((-1, 1))
+        modes_matrix = np.vstack(modes_list)
+        self.modes_coeffs = lstsq(modes_matrix.T,
+                                  np.ravel(self.xyfprofile[dN:self.N - dN, dN:self.N - dN]))[0]
+        return self.modes_coeffs
+
+    def construct_by_modes(self, modes_list, modes_coeffs):
+        modes_list = self._expand_basis(modes_list)
+        modes_list_reshape = []
+        for m in modes_list:
+            modes_list_reshape.append(np.ravel(m).reshape((self.N, self.N)))
+        self.xyfprofile = sum(modes_list_reshape[i] * modes_coeffs[i]
+                              for i in range(len(modes_coeffs)))
+        self.kfprofile = fftpack.fft2(self.xyfprofile)
 
     def __repr__(self):
-        return (f"Beam {self.Nx:d}x{self.Ny:d} points {self.Lx:.3g}x{self.Ly:.3g} cm " +
+        return (f"Beam {self.N:d}x{self.N:d} points {self.L:.3g}x{self.L:.3g} cm " +
                 f"<wl={self.wl * 1e7:.3g} nm, z={self.z:.3g} cm>")
