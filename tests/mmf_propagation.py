@@ -42,12 +42,13 @@ def plot_modes(modes_coeffs):
     plt.show()
 
 
-def g_init(x, y, random=1):
+def g_init(x, y, random=0):
     if random:
         field = random_wave(x, y)
         field[round_hole(x, y, (radius - 1) * 1e-4) == 0] = 0
     else:
-        field = round_hole(x, y, (radius - 1) * 1e-4)
+        field = round_hole(x, y, (radius - 2) * 1e-4)
+        # * np.cos((x) * 1e4) * np.cos((y) * 1e4)
     return field
 
 
@@ -71,7 +72,7 @@ solver.setWL(wl)
 Nmodes_estim = pyMMF.estimateNumModesSI(wl, radius, NA, pola=1)
 
 # modes_semianalytical = solver.solve(mode='SI', curvature=None)
-modes_eig = solver.solve(nmodesMax=300, boundary='close',
+modes_eig = solver.solve(nmodesMax=500, boundary='close',
                          mode='eig', curvature=None, propag_only=True)
 modes_list = modes_eig
 

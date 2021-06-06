@@ -131,9 +131,6 @@ class Beam2D:
         ywidths, _, _, _ = peak_widths(ycentral_profile, peaks=[self.N // 2])
         return xwidths[0] * self.dX, ywidths[0] * self.dY
 
-    def central_intensity(self):
-        return np.abs(self.xyfprofile[self.N // 2, self.N // 2]) ** 2 * 3e10 / 8 / np.pi
-
     def _expand_basis(self, modes_list):
         Nb = np.sqrt(len(modes_list[0])).astype(int)
         if Nb != self.N:
@@ -142,31 +139,29 @@ class Beam2D:
             for m in modes_list:
                 me = np.zeros((self.N, self.N), dtype=np.complex128)
                 me[dN:self.N - dN, dN:self.N - dN] = m.reshape((Nb, Nb))
-                expanded_modes_list.append(np.ravel(me))
+                expanded_modes_list.append(me)
             return expanded_modes_list
         return modes_list
 
     def deconstruct_by_modes(self, modes_list):
         Nb = np.sqrt(len(modes_list[0])).astype(int)
         dN = (self.N - Nb) // 2
-        for m in modes_list:
-            m = np.ravel(m).reshape((-1, 1))
-        modes_matrix = np.vstack(modes_list)
-        self.modes_coeffs = lstsq(modes_matrix.T,
+        modes_matrix = np.vstack(modes_list).T
+        self.modes_coeffs = lstsq(modes_matrix,
                                   np.ravel(self.xyfprofile[dN:self.N - dN, dN:self.N - dN]))[0]
         return self.modes_coeffs
 
     def construct_by_modes(self, modes_list, modes_coeffs):
-        modes_list = self._expand_basis(modes_list)
-        modes_list_reshape = []
-        for m in modes_list:
-            modes_list_reshape.append(np.ravel(m).reshape((self.N, self.N)))
+        modes_list_reshape = self._expand_basis(modes_list)
         self.xyfprofile = sum(modes_list_reshape[i] * modes_coeffs[i]
                               for i in range(len(modes_coeffs)))
         self.kfprofile = fftpack.fft2(self.xyfprofile)
 
     def iprofile(self):
         return np.abs(self.xyfprofile) ** 2
+
+    def central_intensity(self):
+        return self.iprofile()[self.N // 2, self.N // 2] * 3e10 / 8 / np.pi
 
     def __repr__(self):
         return (f"Beam {self.N:d}x{self.N:d} points {self.L:.3g}x{self.L:.3g} cm " +
