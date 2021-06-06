@@ -21,6 +21,8 @@ wl = 0.6328  # wavelength in microns
 areaSize = 3.5*radius
 npoints = 2**7  # resolution of the window
 
+RAND = 1
+
 
 def plot_i(ibeam):
     plt.imshow(ibeam.iprofile(),
@@ -42,12 +44,12 @@ def plot_modes(modes_coeffs):
     plt.show()
 
 
-def g_init(x, y, random=0):
+def g_init(x, y, random=RAND):
     if random:
         field = random_wave(x, y)
         field[round_hole(x, y, (radius - 1) * 1e-4) == 0] = 0
     else:
-        field = round_hole(x, y, (radius - 2) * 1e-4)
+        field = round_hole(x, y, (radius - 1) * 1e-4)
         # * np.cos((x) * 1e4) * np.cos((y) * 1e4)
     return field
 
@@ -90,3 +92,20 @@ plot_modes(tmodes_coeffs)
 for i in range(5):
     ibeam.propagate(100e-4)
     plot_i(ibeam)
+
+if RAND:
+    profiles = []
+    for i in range(100):
+        ibeam = Beam2D(2 * areaSize * 1e-4, 2 * npoints,
+                       wl * 1e-4, init_field_gen=g_init)
+        modes_coeffs = ibeam.deconstruct_by_modes(modes_list.profiles)
+        tmodes_coeffs = fiber_matrix @ modes_coeffs
+        ibeam.construct_by_modes(modes_eig.profiles, tmodes_coeffs)
+        ibeam.propagate(100e-4)
+        profiles.append(ibeam.iprofile())
+    profiles_array = np.array(profiles)
+
+    plt.plot([np.corrcoef(profiles_array[:, npoints, npoints],
+             profiles_array[:, k, npoints])[0, 1] for k in range(ibeam.N)])
+    plt.xlabel(ibeam.X)
+    plt.show()
