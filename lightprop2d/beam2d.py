@@ -112,7 +112,11 @@ class Beam2D:
 
     def propagate(self, z):
         self.z += z * 1.
-        self.kfprofile *= np.exp(- 1.j * self.Kz * z)
+
+        _delta = self.Kz * z
+        delta = _delta - 2. * np.pi * np.trunc(_delta / 2. / np.pi)
+
+        self.kfprofile *= np.exp(- 1.j * delta)
         self.xyfprofile = fftpack.ifft2(self.kfprofile)
 
     def lens(self, f):
@@ -136,7 +140,7 @@ class Beam2D:
             expanded_modes_list = []
             dN = (self.N - Nb) // 2
             for m in modes_list:
-                me = np.zeros((self.N, self.N))
+                me = np.zeros((self.N, self.N), dtype=np.complex128)
                 me[dN:self.N - dN, dN:self.N - dN] = m.reshape((Nb, Nb))
                 expanded_modes_list.append(np.ravel(me))
             return expanded_modes_list
@@ -160,6 +164,9 @@ class Beam2D:
         self.xyfprofile = sum(modes_list_reshape[i] * modes_coeffs[i]
                               for i in range(len(modes_coeffs)))
         self.kfprofile = fftpack.fft2(self.xyfprofile)
+
+    def iprofile(self):
+        return np.abs(self.xyfprofile) ** 2
 
     def __repr__(self):
         return (f"Beam {self.N:d}x{self.N:d} points {self.L:.3g}x{self.L:.3g} cm " +

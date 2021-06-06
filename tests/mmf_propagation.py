@@ -22,7 +22,27 @@ areaSize = 3.5*radius
 npoints = 2**7  # resolution of the window
 
 
-def g_init(x, y, random=0):
+def plot_i(ibeam):
+    plt.imshow(ibeam.iprofile(),
+               extent=(-ibeam.L / 2e-4, ibeam.L / 2e-4, -ibeam.L / 2e-4, ibeam.L / 2e-4))
+    plt.xlabel(r'x, $\mu m$')
+    plt.ylabel(r'y, $\mu m$')
+    plt.colorbar()
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_modes(modes_coeffs):
+    plt.plot(np.real(modes_coeffs))
+    plt.plot(np.imag(modes_coeffs))
+    plt.xlabel('Mode number')
+    plt.ylabel('Coefficient')
+    plt.title('Modes series before the fiber')
+    plt.tight_layout()
+    plt.show()
+
+
+def g_init(x, y, random=1):
     if random:
         field = random_wave(x, y)
         field[round_hole(x, y, (radius - 1) * 1e-4) == 0] = 0
@@ -33,13 +53,7 @@ def g_init(x, y, random=0):
 
 ibeam = Beam2D(2 * areaSize * 1e-4, 2 * npoints,
                wl * 1e-4, init_field_gen=g_init)
-
-plt.imshow(np.abs(ibeam.xyfprofile),
-           extent=(-ibeam.L / 2e-4, ibeam.L / 2e-4, -ibeam.L / 2e-4, ibeam.L / 2e-4))
-plt.xlabel(r'x, $\mu m$')
-plt.ylabel(r'y, $\mu m$')
-plt.tight_layout()
-plt.show()
+plot_i(ibeam)
 
 
 # Create the fiber object
@@ -57,49 +71,21 @@ solver.setWL(wl)
 Nmodes_estim = pyMMF.estimateNumModesSI(wl, radius, NA, pola=1)
 
 # modes_semianalytical = solver.solve(mode='SI', curvature=None)
-modes_eig = solver.solve(nmodesMax=100, boundary='close',
+modes_eig = solver.solve(nmodesMax=300, boundary='close',
                          mode='eig', curvature=None, propag_only=True)
 modes_list = modes_eig
 
 modes_coeffs = ibeam.deconstruct_by_modes(modes_list.profiles)
-
-# init = ibeam.xyfprofile[:, :]
-# field_diff = init - \
-#     ibeam.construct_by_modes(modes_list.profiles, modes_coeffs)
-
-# plt.imshow(np.abs(field_diff))
-# plt.colorbar()
-# plt.show()
-
-plt.plot(np.real(modes_coeffs))
-plt.plot(np.imag(modes_coeffs))
-plt.xlabel('Mode number')
-plt.ylabel('Coefficient')
-plt.title('Modes series before the fiber')
-plt.show()
+plot_modes(modes_coeffs)
 
 fiber_length = 50e4  # um
 fiber_matrix = modes_eig.getPropagationMatrix(fiber_length)
 tmodes_coeffs = fiber_matrix @ modes_coeffs
 
 ibeam.construct_by_modes(modes_eig.profiles, tmodes_coeffs)
+plot_i(ibeam)
+plot_modes(tmodes_coeffs)
 
-plt.plot(np.real(tmodes_coeffs))
-plt.plot(np.imag(tmodes_coeffs))
-plt.xlabel('Mode number')
-plt.ylabel('Coefficient')
-plt.title(f'Modes series after the fiber, L={fiber_length * 1e-4:g} cm')
-plt.show()
-
-
-plt.imshow(np.abs(ibeam.xyfprofile))
-plt.show()
-
-ibeam.propagate(100e-4)
-
-plt.imshow(np.abs(ibeam.xyfprofile),
-           extent=(-ibeam.L / 2e-4, ibeam.L / 2e-4, -ibeam.L / 2e-4, ibeam.L / 2e-4))
-plt.xlabel(r'x, $\mu m$')
-plt.ylabel(r'y, $\mu m$')
-plt.tight_layout()
-plt.show()
+for i in range(5):
+    ibeam.propagate(100e-4)
+    plot_i(ibeam)
