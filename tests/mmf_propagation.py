@@ -9,7 +9,7 @@ import pyMMF
 import numpy as np
 import matplotlib.pyplot as plt
 
-from lightprop2d import Beam2D, gaussian_beam, round_hole, random_wave
+from lightprop2d import Beam2D, gaussian_beam, round_hole, random_wave, random_round_hole
 
 # Parameters
 NA = 0.27
@@ -26,7 +26,7 @@ RAND = 1
 
 def plot_i(ibeam):
     area_size = ibeam.area_size
-    plt.imshow(ibeam.iprofile(),
+    plt.imshow(ibeam.iprofile,
                extent=(-area_size / 2e-4, area_size / 2e-4, -area_size / 2e-4, area_size / 2e-4))
     plt.xlabel(r'x, $\mu m$')
     plt.ylabel(r'y, $\mu m$')
@@ -46,17 +46,18 @@ def plot_modes(modes_coeffs):
 
 
 def g_init(x, y, random=RAND):
-    if random:
-        field = random_wave(x, y)
-        field[round_hole(x, y, (radius - 1) * 1e-4) == 0] = 0
-    else:
-        field = round_hole(x, y, (radius - 1) * 1e-4)
-        # * np.cos((x) * 1e4) * np.cos((y) * 1e4)
-    return field
+    return random_round_hole(x, y, (radius - 1) * 1e-4)
+    # if random:
+    #     field = random_wave(x, y)
+    #     field[round_hole(x, y, (radius - 1) * 1e-4) == 0] = 0
+    # else:
+    #     field = round_hole(x, y, (radius - 1) * 1e-4)
+    #     # * np.cos((x) * 1e4) * np.cos((y) * 1e4)
+    # return field
 
 
 ibeam = Beam2D(2 * areaSize * 1e-4, 2 * npoints,
-               wl * 1e-4, init_field_gen=g_init)
+               wl * 1e-4, init_field_gen=random_round_hole, init_gen_args=((radius - 1) * 1e-4,))
 plot_i(ibeam)
 
 

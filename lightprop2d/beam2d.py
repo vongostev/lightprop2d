@@ -22,6 +22,12 @@ else:
     pyfftw.interfaces.cache.enable()
 
 
+__all__ = ('plane_wave', 'random_wave', 'gaussian_beam',
+           'round_hole', 'random_round_hole',
+           'rectangle_hole', 'square_hole',
+           'square_slits', 'Beam2D')
+
+
 @np.vectorize
 def plane_wave(x, y):
     return 1
@@ -39,8 +45,14 @@ def gaussian_beam(x, y, A0, rho0):
 
 def round_hole(x, y, R, x0=0, y0=0):
     d = gaussian_beam(x - x0, y - y0, 1, R)
-    d = d >= 1 / np.exp(0.5)
-    return np.array(d, dtype=int)
+    field = d >= 1 / np.exp(0.5)
+    return np.array(field, dtype=int)
+
+
+def random_round_hole(x, y, R, x0=0, y0=0):
+    field = random_wave(x, y)
+    field[round_hole(x, y, R, x0, y0) == 0] = 0
+    return field
 
 
 @np.vectorize
@@ -66,6 +78,7 @@ class Beam2D:
     z: float = 0.
     init_field: np.ndarray = None
     init_field_gen: object = None
+    init_gen_args: tuple = ()
 
     def __post_init__(self):
 
@@ -85,7 +98,8 @@ class Beam2D:
                 f"Critical K⟂ {k_cryt:d} must be bigger than {self.npoints // 2}")
 
         if self.init_field_gen is not None:
-            self.xyprofile = np.complex128(self.init_field_gen(self.X, self.Y))
+            self.xyprofile = np.complex128(
+                self.init_field_gen(self.X, self.Y, *self.init_gen_args))
         elif self.init_field is not None:
             self.xyprofile = np.complex128(self.init_field)
         else:
@@ -124,15 +138,6 @@ class Beam2D:
             np.exp(1.j * (self.X ** 2 + self.Y ** 2) * self.k0 / 2 / f)
         self.kfprofile = fftpack.fft2(self.xyfprofile)
 
-    def gaussian_fwhm(self):
-        xcentral_profile = np.abs(self.xyfprofile[self.npoints // 2, :])
-        xwidths, _, _, _ = peak_widths(
-            xcentral_profile, peaks=[self.npoints // 2])
-        ycentral_profile = np.abs(self.xyfprofile[:, self.npoints // 2])
-        ywidths, _, _, _ = peak_widths(
-            ycentral_profile, peaks=[self.npoints // 2])
-        return xwidths[0] * self.dX, ywidths[0] * self.dY
-
     def _expand_basis(self, modes_list):
         Nb = np.sqrt(len(modes_list[0])).astype(int)
         if Nb != self.npoints:
@@ -161,11 +166,23 @@ class Beam2D:
                               for i in range(len(modes_coeffs)))
         self.kfprofile = fftpack.fft2(self.xyfprofile)
 
+    @property
+    def gaussian_fwhm(self):
+        xcentral_profile = np.abs(self.xyfprofile[self.npoints // 2, :])
+        xwidths, _, _, _ = peak_widths(
+            xcentral_profile, peaks=[self.npoints // 2])
+        ycentral_profile = np.abs(self.xyfprofile[:, self.npoints // 2])
+        ywidths, _, _, _ = peak_widths(
+            ycentral_profile, peaks=[self.npoints // 2])
+        return xwidths[0] * self.dX, ywidths[0] * self.dY
+
+    @property
     def iprofile(self):
         return np.abs(self.xyfprofile) ** 2
 
+    @property
     def central_intensity(self):
-        return self.iprofile()[self.npoints // 2, self.npoints // 2] * 3e10 / 8 / np.pi
+        return self.iprofile[self.npoints // 2, self.npoints // 2] * 3e10 / 8 / np.pi
 
     def __repr__(self):
         return (f"Beam {self.npoints:d}x{self.npoints:d} points {self.area_size:.3g}x{self.area_size:.3g} cm " +

@@ -25,13 +25,9 @@ wl0 = 532e-7
 # Round hole radius
 R = 0.01
 
-# Round hole initialize function
 
-
-def rh_init(x, y): return gaussian_beam(x, y, 1, R)
-
-
-beam = Beam2D(area_size, npoints, wl0, init_field_gen=rh_init)
+beam = Beam2D(area_size, npoints, wl0, init_field_gen=gaussian_beam,
+              init_gen_args=(1, R))
 
 # Z grid for a propagation
 dz = 0.2
@@ -43,7 +39,7 @@ beam.propagate(z_grid[0])
 for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)
-    intensities.append(beam.central_intensity())
+    intensities.append(beam.central_intensity)
 
 z_normalized = z_grid / 2 / np.pi / beam.k0 / R ** 2
 plt.plot(z_normalized, np.array(intensities) /

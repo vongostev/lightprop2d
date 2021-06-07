@@ -25,10 +25,8 @@ wl0 = 532e-7
 R = 0.01
 
 
-def rh_init(x, y): return round_hole(x, y, R)
-
-
-beam = Beam2D(area_size, npoints, wl0, init_field_gen=rh_init)
+beam = Beam2D(area_size, npoints, wl0, init_field_gen=round_hole,
+              init_gen_args=(R,))
 
 # Z grid for a propagation
 dz = 0.02
@@ -39,7 +37,7 @@ beam.propagate(z_grid[0])
 for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)
-    intensities.append(beam.central_intensity())
+    intensities.append(beam.central_intensity)
 
 z_normalized = z_grid * beam.wl * 2 / R ** 2
 plt.plot(z_normalized, np.array(intensities) /
@@ -68,9 +66,6 @@ wl0 = 532e-7
 d = 0.02
 
 
-def sh_init(x, y): return square_hole(x, y, d)
-
-
 def lfunc_sqr(a, b):
     # Formula 14.9
     c1, s1 = fresnel(a)
@@ -78,7 +73,8 @@ def lfunc_sqr(a, b):
     return (c1 - c2) ** 2 + (s1 - s2) ** 2
 
 
-beam = Beam2D(area_size, npoints, wl0, init_field_gen=sh_init)
+beam = Beam2D(area_size, npoints, wl0, init_field_gen=square_hole,
+              init_gen_args=(d,))
 
 # Z grid for a propagation
 dz = 0.01
@@ -89,7 +85,7 @@ beam.propagate(z_grid[0])
 for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)
-    intensities.append(beam.central_intensity())
+    intensities.append(beam.central_intensity)
 
 z_normalized = z_grid * beam.wl * 2 / d ** 2
 plt.plot(z_normalized, np.array(intensities) /
