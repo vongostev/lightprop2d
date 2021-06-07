@@ -1,5 +1,6 @@
 [![pypi](https://github.com/vongostev/lightprop2d/actions/workflows/python-publish.yml/badge.svg)](https://github.com/vongostev/lightprop2d/actions/workflows/python-publish.yml)
 [![python 3.6-3.8](https://github.com/vongostev/lightprop2d/actions/workflows/python-package.yml/badge.svg)](https://github.com/vongostev/lightprop2d/actions/workflows/python-package.yml)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/vongostev/lightprop2d.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/vongostev/lightprop2d/context:python)
 
 ### Light propagation
 Lightprop2d includes class 'Beam2D' to transform intitial field distribution
