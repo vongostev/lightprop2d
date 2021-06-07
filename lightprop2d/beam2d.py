@@ -95,7 +95,7 @@ class Beam2D:
         k_cryt = np.trunc(self.area_size / self.wl)
         if self.npoints / 2 > k_cryt:
             raise ValueError(
-                f"Critical K⟂ {k_cryt:d} must be bigger than {self.npoints // 2}")
+                f"Critical K⟂ {k_cryt:g} must be bigger than {self.npoints // 2}")
 
         if self.init_field_gen is not None:
             self.xyprofile = np.complex128(
@@ -174,7 +174,7 @@ class Beam2D:
         ycentral_profile = np.abs(self.xyfprofile[:, self.npoints // 2])
         ywidths, _, _, _ = peak_widths(
             ycentral_profile, peaks=[self.npoints // 2])
-        return xwidths[0] * self.dX, ywidths[0] * self.dY
+        return xwidths[0] * self.dL, ywidths[0] * self.dL
 
     @property
     def iprofile(self):
