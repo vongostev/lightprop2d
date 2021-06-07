@@ -60,8 +60,8 @@ def square_slits(x, y, d, slits_distance, x0=0, y0=0):
 @dataclass
 class Beam2D:
 
-    L: float
-    N: int
+    area_size: float
+    npoints: int
     wl: float
     z: float = 0.
     init_field: np.ndarray = None
@@ -69,20 +69,20 @@ class Beam2D:
 
     def __post_init__(self):
 
-        self.dL = self.L / self.N
-        self.X = np.arange(-self.N // 2, self.N // 2, 1) * self.dL
+        self.dL = self.area_size / self.npoints
+        self.X = np.arange(-self.npoints // 2, self.npoints // 2, 1) * self.dL
         self.Y = self.X.reshape((-1, 1))
 
         self.k0 = 1 / self.wl
-        self.Kx = self._k_grid(self.dL, self.N)
+        self.Kx = self._k_grid(self.dL, self.npoints)
         self.Ky = self.Kx.reshape((-1, 1))
         self.Kz = 2 * np.pi * np.abs(
             np.emath.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2))
 
-        k_cryt = np.trunc(self.L / self.wl)
-        if self.N / 2 > k_cryt:
+        k_cryt = np.trunc(self.area_size / self.wl)
+        if self.npoints / 2 > k_cryt:
             raise ValueError(
-                f"Critical K⟂ {k_cryt:d} must be bigger than {self.N // 2}")
+                f"Critical K⟂ {k_cryt:d} must be bigger than {self.npoints // 2}")
 
         if self.init_field_gen is not None:
             self.xyprofile = np.complex128(self.init_field_gen(self.X, self.Y))
@@ -94,8 +94,8 @@ class Beam2D:
                 "'init_field_gen' must be a function or 'init_field' must be an array.")
         self._construct_profile()
 
-    def _k_grid(self, dL, N):
-        return fftpack.fftfreq(N, d=dL)
+    def _k_grid(self, dL, npoints):
+        return fftpack.fftfreq(npoints, d=dL)
 
     def _construct_profile(self):
         self.kprofile = fftpack.fft2(self.xyprofile)
@@ -125,30 +125,34 @@ class Beam2D:
         self.kfprofile = fftpack.fft2(self.xyfprofile)
 
     def gaussian_fwhm(self):
-        xcentral_profile = np.abs(self.xyfprofile[self.N // 2, :])
-        xwidths, _, _, _ = peak_widths(xcentral_profile, peaks=[self.N // 2])
-        ycentral_profile = np.abs(self.xyfprofile[:, self.N // 2])
-        ywidths, _, _, _ = peak_widths(ycentral_profile, peaks=[self.N // 2])
+        xcentral_profile = np.abs(self.xyfprofile[self.npoints // 2, :])
+        xwidths, _, _, _ = peak_widths(
+            xcentral_profile, peaks=[self.npoints // 2])
+        ycentral_profile = np.abs(self.xyfprofile[:, self.npoints // 2])
+        ywidths, _, _, _ = peak_widths(
+            ycentral_profile, peaks=[self.npoints // 2])
         return xwidths[0] * self.dX, ywidths[0] * self.dY
 
     def _expand_basis(self, modes_list):
         Nb = np.sqrt(len(modes_list[0])).astype(int)
-        if Nb != self.N:
+        if Nb != self.npoints:
             expanded_modes_list = []
-            dN = (self.N - Nb) // 2
+            dN = (self.npoints - Nb) // 2
             for m in modes_list:
-                me = np.zeros((self.N, self.N), dtype=np.complex128)
-                me[dN:self.N - dN, dN:self.N - dN] = m.reshape((Nb, Nb))
+                me = np.zeros((self.npoints, self.npoints),
+                              dtype=np.complex128)
+                me[dN:self.npoints - dN, dN:self.npoints -
+                    dN] = m.reshape((Nb, Nb))
                 expanded_modes_list.append(me)
             return expanded_modes_list
         return modes_list
 
     def deconstruct_by_modes(self, modes_list):
         Nb = np.sqrt(len(modes_list[0])).astype(int)
-        dN = (self.N - Nb) // 2
+        dN = (self.npoints - Nb) // 2
         modes_matrix = np.vstack(modes_list).T
         self.modes_coeffs = lstsq(modes_matrix,
-                                  np.ravel(self.xyfprofile[dN:self.N - dN, dN:self.N - dN]))[0]
+                                  np.ravel(self.xyfprofile[dN:self.npoints - dN, dN:self.npoints - dN]))[0]
         return self.modes_coeffs
 
     def construct_by_modes(self, modes_list, modes_coeffs):
@@ -161,8 +165,8 @@ class Beam2D:
         return np.abs(self.xyfprofile) ** 2
 
     def central_intensity(self):
-        return self.iprofile()[self.N // 2, self.N // 2] * 3e10 / 8 / np.pi
+        return self.iprofile()[self.npoints // 2, self.npoints // 2] * 3e10 / 8 / np.pi
 
     def __repr__(self):
-        return (f"Beam {self.N:d}x{self.N:d} points {self.L:.3g}x{self.L:.3g} cm " +
+        return (f"Beam {self.npoints:d}x{self.npoints:d} points {self.area_size:.3g}x{self.area_size:.3g} cm " +
                 f"<wl={self.wl * 1e7:.3g} nm, z={self.z:.3g} cm>")

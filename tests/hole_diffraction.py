@@ -3,17 +3,18 @@
 Дифракция на круглом и квадратном отверстиях
 Ахманов С.А., Никитин С.Ю. Физическая оптика. Лекция 14
 """
+import __init__
 import numpy as np
 from scipy.special import fresnel
 import matplotlib.pyplot as plt
 
-from beam2d import Beam2D, round_hole, square_hole
+from lightprop2d import Beam2D, round_hole, square_hole
 
 # XY grid dimensions
-Nx = Ny = 1000
+npoints = 256
 # All input data are in cm
 # XY grid widening
-Lx = Ly = 5e-1
+area_size = 2e-1
 # Wavelength in cm
 wl0 = 532e-7
 
@@ -27,7 +28,7 @@ R = 0.01
 def rh_init(x, y): return round_hole(x, y, R)
 
 
-beam = Beam2D(init_field_gen=rh_init, wl=wl0, Lx=Lx, Ly=Ly, Nx=Nx, Ny=Ny)
+beam = Beam2D(area_size, npoints, wl0, init_field_gen=rh_init)
 
 # Z grid for a propagation
 dz = 0.02
@@ -41,7 +42,8 @@ for z in z_grid:
     intensities.append(beam.central_intensity())
 
 z_normalized = z_grid * beam.wl * 2 / R ** 2
-plt.plot(z_normalized, np.array(intensities) / (3e10 / 8 / np.pi), label='Calc')
+plt.plot(z_normalized, np.array(intensities) /
+         (3e10 / 8 / np.pi), label='Calc')
 plt.plot(z_normalized, 4 * np.sin(np.pi / z_normalized) ** 2,
          '--', label='Theory')
 plt.axhline(4, linestyle=':')
@@ -56,10 +58,10 @@ plt.show()
 Дифракция на квадратном отверстии
 """
 # XY grid dimensions
-Nx = Ny = 2000
+npoints = 256
 # All input data are in cm
 # XY grid widening
-Lx = Ly = 4e-1
+area_size = 2e-1
 # Wavelength in cm
 wl0 = 532e-7
 # Square hole width
@@ -76,7 +78,7 @@ def lfunc_sqr(a, b):
     return (c1 - c2) ** 2 + (s1 - s2) ** 2
 
 
-beam = Beam2D(init_field_gen=sh_init, wl=wl0, Lx=Lx, Ly=Ly, Nx=Nx, Ny=Ny)
+beam = Beam2D(area_size, npoints, wl0, init_field_gen=sh_init)
 
 # Z grid for a propagation
 dz = 0.01
@@ -90,7 +92,8 @@ for z in z_grid:
     intensities.append(beam.central_intensity())
 
 z_normalized = z_grid * beam.wl * 2 / d ** 2
-plt.plot(z_normalized, np.array(intensities) / (3e10 / 8 / np.pi), label='Calc')
+plt.plot(z_normalized, np.array(intensities) /
+         (3e10 / 8 / np.pi), label='Calc')
 plt.plot(z_normalized,
          0.25 * lfunc_sqr(- np.sqrt(1 / z_normalized),
                           np.sqrt(1 / z_normalized)) ** 2,

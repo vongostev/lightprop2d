@@ -15,10 +15,10 @@ import matplotlib.pyplot as plt
 from lightprop2d import Beam2D, gaussian_beam
 
 # XY grid dimensions
-Nx = Ny = 200
+npoints = 256
 # All input data are in cm
 # XY grid widening
-Lx = Ly = 2e-1
+area_size = 2e-1
 # Wavelength in cm
 wl0 = 532e-7
 
@@ -31,7 +31,7 @@ R = 0.01
 def rh_init(x, y): return gaussian_beam(x, y, 1, R)
 
 
-beam = Beam2D(init_field_gen=rh_init, wl=wl0, Lx=Lx, Ly=Ly, Nx=Nx, Ny=Ny)
+beam = Beam2D(area_size, npoints, wl0, init_field_gen=rh_init)
 
 # Z grid for a propagation
 dz = 0.2

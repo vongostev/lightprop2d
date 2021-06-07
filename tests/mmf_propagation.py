@@ -25,8 +25,9 @@ RAND = 1
 
 
 def plot_i(ibeam):
+    area_size = ibeam.area_size
     plt.imshow(ibeam.iprofile(),
-               extent=(-ibeam.L / 2e-4, ibeam.L / 2e-4, -ibeam.L / 2e-4, ibeam.L / 2e-4))
+               extent=(-area_size / 2e-4, area_size / 2e-4, -area_size / 2e-4, area_size / 2e-4))
     plt.xlabel(r'x, $\mu m$')
     plt.ylabel(r'y, $\mu m$')
     plt.colorbar()
@@ -74,7 +75,7 @@ solver.setWL(wl)
 Nmodes_estim = pyMMF.estimateNumModesSI(wl, radius, NA, pola=1)
 
 # modes_semianalytical = solver.solve(mode='SI', curvature=None)
-modes_eig = solver.solve(nmodesMax=500, boundary='close',
+modes_eig = solver.solve(nmodesMax=50, boundary='close',
                          mode='eig', curvature=None, propag_only=True)
 modes_list = modes_eig
 
@@ -105,7 +106,8 @@ if RAND:
         profiles.append(ibeam.iprofile())
     profiles_array = np.array(profiles)
 
-    plt.plot([np.corrcoef(profiles_array[:, npoints, npoints],
+    plt.plot(ibeam.X * 1e4, [np.corrcoef(profiles_array[:, npoints, npoints],
              profiles_array[:, k, npoints])[0, 1] for k in range(ibeam.N)])
-    plt.xlabel(ibeam.X)
+    plt.xlabel(r'x, $\mu m$')
+    plt.ylabel('corr')
     plt.show()
