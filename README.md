@@ -5,6 +5,10 @@
 Lightprop2d includes class 'Beam2D' to transform intitial field distribution
 using fourier transform from x-y field profile to kx-ky spectrum.
 
+You can install it as follows
+```
+pip install lightprop2d
+```
 ### Example 1: Random beam propagation
 ```python
 import matplotlib.pyplot as plt
