@@ -18,7 +18,7 @@ n1 = 1.45
 wl = 0.6328  # wavelength in microns
 
 # calculate the field on an area larger than the diameter of the fiber
-areaSize = 3.5*radius
+area_size = 3.5*radius
 npoints = 2**7  # resolution of the window
 
 RAND = 1
@@ -40,19 +40,19 @@ def plot_modes(modes_coeffs):
     plt.plot(np.imag(modes_coeffs))
     plt.xlabel('Mode number')
     plt.ylabel('Coefficient')
-    plt.title('Modes series before the fiber')
+    # plt.title('Modes series after the fiber')
     plt.tight_layout()
     plt.show()
 
 
-ibeam = Beam2D(2 * areaSize * 1e-4, 2 * npoints,
-               wl * 1e-4, init_field_gen=random_round_hole,
+ibeam = Beam2D(2 * area_size * 1e-4, 2 * npoints,
+               wl * 1e-4, init_field_gen=round_hole,
                init_gen_args=((radius - 1) * 1e-4,))
 plot_i(ibeam)
 
 
 # Create the fiber object
-profile = pyMMF.IndexProfile(npoints=npoints, areaSize=areaSize)
+profile = pyMMF.IndexProfile(npoints=npoints, areaSize=area_size)
 # Initialize the index profile
 profile.initStepIndex(n1=n1, a=radius, NA=NA)
 # Instantiate the solver

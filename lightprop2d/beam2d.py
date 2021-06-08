@@ -150,7 +150,7 @@ class Beam2D:
                     dN] = m.reshape((Nb, Nb))
                 expanded_modes_list.append(me)
             return expanded_modes_list
-        return modes_list
+        return [m.reshape((Nb, Nb)) for m in modes_list]
 
     def deconstruct_by_modes(self, modes_list):
         Nb = np.sqrt(len(modes_list[0])).astype(int)
