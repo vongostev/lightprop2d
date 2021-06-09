@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import fftpack
 from scipy.signal import peak_widths
-from scipy.linalg import lstsq
+from scipy.linalg import lstsq, solve
 
 try:
     import pyfftw
@@ -143,27 +143,76 @@ class Beam2D:
         if Nb != self.npoints:
             expanded_modes_list = []
             dN = (self.npoints - Nb) // 2
+            Nt = self.npoints - dN
+            Nl = dN
             for m in modes_list:
                 me = np.zeros((self.npoints, self.npoints),
                               dtype=np.complex128)
-                me[dN:self.npoints - dN, dN:self.npoints -
-                    dN] = m.reshape((Nb, Nb))
+                me[Nl:Nt, Nl:Nt] = m.reshape((Nb, Nb))
                 expanded_modes_list.append(me)
-            return expanded_modes_list
-        return [m.reshape((Nb, Nb)) for m in modes_list]
+            return np.array(expanded_modes_list)
+        return np.array([m.reshape((Nb, Nb)) for m in modes_list])
 
     def deconstruct_by_modes(self, modes_list):
+        """
+        Return decomposed coefficients in given mode basis
+        as least-square solution
+
+        Parameters
+        ----------
+        modes_list : iterable
+            List of flattened modes. Unified with pyMMF
+
+        Returns
+        -------
+        ndarray
+            Modes coefficients.
+
+        """
+
         Nb = np.sqrt(len(modes_list[0])).astype(int)
         dN = (self.npoints - Nb) // 2
         modes_matrix = np.vstack(modes_list).T
-        self.modes_coeffs = lstsq(modes_matrix,
-                                  np.ravel(self.xyfprofile[dN:self.npoints - dN, dN:self.npoints - dN]))[0]
+        flatten_field = \
+            self.xyfprofile[dN:self.npoints - dN,
+                            dN:self.npoints - dN].flatten()
+        self.modes_coeffs = lstsq(modes_matrix, flatten_field)[0]
+        return self.modes_coeffs
+
+    def fast_deconstruct_by_modes(self, modes_matrix_t,  modes_matrix_dot_t):
+        """
+        Return decomposed coefficients in given mode basis
+        as least-square solution
+        Fast version with pre-computations        
+
+        Parameters
+        ----------
+        modes_matrix_t : ndarray
+            If modes are flatten then modes_matrix_t is calculated as follows:
+                >>> modes_matrix = np.vstack(modes_list).T
+
+        modes_matrix_dot_t : ndarray
+            Linear system matrix. It is calculated so:
+                >>> modes_matrix.T.dot(modes_matrix)
+
+        Returns
+        -------
+        ndarray
+            Modes coefficients.
+
+        """
+        Nb = np.sqrt(modes_matrix_t.shape[1]).astype(int)
+        dN = (self.npoints - Nb) // 2
+        flatten_field = \
+            self.xyfprofile[dN:self.npoints - dN,
+                            dN:self.npoints - dN].flatten()
+        self.modes_coeffs = solve(
+            modes_matrix_dot_t, modes_matrix_t.dot(flatten_field))
         return self.modes_coeffs
 
     def construct_by_modes(self, modes_list, modes_coeffs):
         modes_list_reshape = self._expand_basis(modes_list)
-        self.xyfprofile = sum(modes_list_reshape[i] * modes_coeffs[i]
-                              for i in range(len(modes_coeffs)))
+        self.xyfprofile = sum(modes_list_reshape * modes_coeffs)
         self.kfprofile = fftpack.fft2(self.xyfprofile)
 
     @property

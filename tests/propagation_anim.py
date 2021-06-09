@@ -5,12 +5,9 @@ Created on Tue Jun  8 15:21:37 2021
 @author: vonGostev
 """
 
-import matplotlib
-import random
 import __init__
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import numpy as np
 from lightprop2d import Beam2D, gaussian_beam, random_round_hole
 
 
