@@ -51,17 +51,17 @@ class Beam2DCPU:
                 f"Critical K⟂ {k_cryt:g} must be bigger than {self.npoints // 2}")
 
         if self.init_field_gen is not None:
-            self.xyprofile = np.complex128(
-                self.init_field_gen(self.X, self.Y, *self.init_gen_args))
+            self.xyprofile = \
+                self.init_field_gen(self.X, self.Y, *self.init_gen_args).astype(np.complex128)
         elif self.init_field is not None:
-            self.xyprofile = np.complex128(self.init_field)
+            self.xyprofile = self.init_field.astype(np.complex128)
         else:
             raise ValueError(
                 "Init field data is None: " +
                 "'init_field_gen' must be a function or 'init_field' must be an array.")
         self.kprofile = fftpack.fft2(self.xyprofile)
-        self.xyfprofile = self.xyprofile[:, :]
-        self.kfprofile = self.kprofile[:, :]
+        self.xyfprofile = self.xyprofile.copy()
+        self.kfprofile = self.kprofile.copy()
 
     def _k_grid(self, dL, npoints):
         return fftpack.fftfreq(npoints, d=dL)

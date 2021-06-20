@@ -16,7 +16,7 @@ from lightprop2d import gaussian_beam
 from lightprop2d import Beam2DGPU as Beam2D
 
 # XY grid dimensions
-npoints = 256
+npoints = 1024
 # All input data are in cm
 # XY grid widening
 area_size = 2e-1

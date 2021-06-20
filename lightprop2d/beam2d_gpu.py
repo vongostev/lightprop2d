@@ -61,8 +61,8 @@ class Beam2DGPU:
                 "'init_field_gen' must be a function or 'init_field' must be an array.")
 
         self.kprofile = cp.fft.fft2(self.xyprofile)
-        self.xyfprofile = self.xyprofile[:, :]
-        self.kfprofile = self.kprofile[:, :]
+        self.xyfprofile = self.xyprofile.copy()
+        self.kfprofile = self.kprofile.copy()
 
     def _k_grid(self, dL, npoints):
         return cp.fft.fftfreq(npoints, d=dL)
