@@ -12,7 +12,8 @@ import __init__
 import numpy as np
 import matplotlib.pyplot as plt
 
-from lightprop2d import Beam2D, gaussian_beam
+from lightprop2d import gaussian_beam
+from lightprop2d import Beam2DGPU as Beam2D
 
 # XY grid dimensions
 npoints = 256

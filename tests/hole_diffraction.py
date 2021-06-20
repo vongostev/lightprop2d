@@ -8,10 +8,11 @@ import numpy as np
 from scipy.special import fresnel
 import matplotlib.pyplot as plt
 
-from lightprop2d import Beam2D, round_hole, square_hole
+from lightprop2d import round_hole, square_hole
+from lightprop2d import Beam2DGPU as Beam2D
 
 # XY grid dimensions
-npoints = 256
+npoints = 1024
 # All input data are in cm
 # XY grid widening
 area_size = 2e-1
@@ -23,7 +24,6 @@ wl0 = 532e-7
 """
 # Round hole radius
 R = 0.01
-
 
 beam = Beam2D(area_size, npoints, wl0, init_field_gen=round_hole,
               init_gen_args=(R,))
@@ -41,9 +41,9 @@ for z in z_grid:
 
 z_normalized = z_grid * beam.wl * 2 / R ** 2
 plt.plot(z_normalized, np.array(intensities) /
-         (3e10 / 8 / np.pi), label='Calc')
+          (3e10 / 8 / np.pi), label='Calc')
 plt.plot(z_normalized, 4 * np.sin(np.pi / z_normalized) ** 2,
-         '--', label='Theory')
+          '--', label='Theory')
 plt.axhline(4, linestyle=':')
 plt.xlabel(r'$2\lambda z/R^2$')
 plt.ylabel(r'$\frac{I_0(z)}{I_0(0)}$' + '\t   ', rotation=0, fontsize=14)
@@ -56,7 +56,7 @@ plt.show()
 Дифракция на квадратном отверстии
 """
 # XY grid dimensions
-npoints = 256
+# npoints = 256
 # All input data are in cm
 # XY grid widening
 area_size = 2e-1
@@ -89,11 +89,11 @@ for z in z_grid:
 
 z_normalized = z_grid * beam.wl * 2 / d ** 2
 plt.plot(z_normalized, np.array(intensities) /
-         (3e10 / 8 / np.pi), label='Calc')
+          (3e10 / 8 / np.pi), label='Calc')
 plt.plot(z_normalized,
-         0.25 * lfunc_sqr(- np.sqrt(1 / z_normalized),
+          0.25 * lfunc_sqr(- np.sqrt(1 / z_normalized),
                           np.sqrt(1 / z_normalized)) ** 2,
-         '--', label='Theory')
+          '--', label='Theory')
 plt.xlabel(r'$2\lambda z/d^2$')
 plt.ylabel(r'$\frac{I_0(z)}{I_0(0)}$' + '\t   ', rotation=0, fontsize=14)
 plt.legend(frameon=False)

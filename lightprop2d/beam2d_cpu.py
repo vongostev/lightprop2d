@@ -6,8 +6,8 @@ Free-space beam propagation between arbitrarily oriented planes
 based on full diffraction theory: a fast Fourier transform approach.
 JOSA A, 15(4), 857-867.
 """
-from dataclasses import dataclass
 import numpy as np
+from dataclasses import dataclass
 from scipy import fftpack
 from scipy.signal import peak_widths
 from scipy.linalg import lstsq, solve
@@ -22,55 +22,8 @@ else:
     pyfftw.interfaces.cache.enable()
 
 
-__all__ = ('plane_wave', 'random_wave', 'gaussian_beam',
-           'round_hole', 'random_round_hole',
-           'rectangle_hole', 'square_hole',
-           'square_slits', 'Beam2D')
-
-
-@np.vectorize
-def plane_wave(x, y):
-    return 1
-
-
-@np.vectorize
-def random_wave(x, y):
-    return np.random.random()
-
-
-@np.vectorize
-def gaussian_beam(x, y, A0, rho0):
-    return A0 * np.exp(- (x ** 2 + y ** 2) / 2 / rho0 ** 2)
-
-
-def round_hole(x, y, R, x0=0, y0=0):
-    d = gaussian_beam(x - x0, y - y0, 1, R)
-    field = d >= 1 / np.exp(0.5)
-    return np.array(field, dtype=int)
-
-
-def random_round_hole(x, y, R, x0=0, y0=0):
-    field = random_wave(x, y)
-    field[round_hole(x, y, R, x0, y0) == 0] = 0
-    return field
-
-
-@np.vectorize
-def rectangle_hole(x, y, dx, dy, x0=0, y0=0):
-    return (abs(x - x0) < (dx / 2)) & (abs(y - y0) < (dy / 2))
-
-
-def square_hole(x, y, d, x0=0, y0=0):
-    return rectangle_hole(x, y, d, d, x0, y0)
-
-
-def square_slits(x, y, d, slits_distance, x0=0, y0=0):
-    l = slits_distance / 2
-    return square_hole(x, y, d, x0 - l, y0) | square_hole(x, y, d, x0 + l, y0)
-
-
 @dataclass
-class Beam2D:
+class Beam2DCPU:
 
     area_size: float
     npoints: int
@@ -106,15 +59,12 @@ class Beam2D:
             raise ValueError(
                 "Init field data is None: " +
                 "'init_field_gen' must be a function or 'init_field' must be an array.")
-        self._construct_profile()
-
-    def _k_grid(self, dL, npoints):
-        return fftpack.fftfreq(npoints, d=dL)
-
-    def _construct_profile(self):
         self.kprofile = fftpack.fft2(self.xyprofile)
         self.xyfprofile = self.xyprofile[:, :]
         self.kfprofile = self.kprofile[:, :]
+
+    def _k_grid(self, dL, npoints):
+        return fftpack.fftfreq(npoints, d=dL)
 
     def coordinate_filter(self, f):
         self.xyfprofile *= f(self.X, self.Y)
@@ -183,7 +133,9 @@ class Beam2D:
         """
         Return decomposed coefficients in given mode basis
         as least-square solution
-        Fast version with pre-computations        
+        Fast version with pre-computations     
+
+        Results can be a little different from `deconstruct_by_modes` ones
 
         Parameters
         ----------
@@ -212,7 +164,8 @@ class Beam2D:
 
     def construct_by_modes(self, modes_list, modes_coeffs):
         modes_list_reshape = self._expand_basis(modes_list)
-        self.xyfprofile = sum(modes_list_reshape * modes_coeffs)
+        self.xyfprofile = np.einsum(
+            'ijk,i->jk', modes_list_reshape, modes_coeffs)
         self.kfprofile = fftpack.fft2(self.xyfprofile)
 
     @property

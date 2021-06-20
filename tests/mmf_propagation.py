@@ -9,7 +9,9 @@ import pyMMF
 import numpy as np
 import matplotlib.pyplot as plt
 
-from lightprop2d import Beam2D, gaussian_beam, round_hole, random_wave, random_round_hole
+from lightprop2d import gaussian_beam, round_hole, random_wave, random_round_hole
+from lightprop2d import Beam2DGPU as Beam2D
+
 
 # Parameters
 NA = 0.27
@@ -65,19 +67,19 @@ solver.setWL(wl)
 # Estimate the number of modes for a graded index fiber
 Nmodes_estim = pyMMF.estimateNumModesSI(wl, radius, NA, pola=1)
 
-# modes_semianalytical = solver.solve(mode='SI', curvature=None)
-modes_eig = solver.solve(nmodesMax=50, boundary='close',
-                         mode='eig', curvature=None, propag_only=True)
-modes_list = modes_eig
-
-modes_coeffs = ibeam.deconstruct_by_modes(modes_list.profiles)
+modes_semianalytical = solver.solve(mode='SI', curvature=None)
+# modes_eig = solver.solve(nmodesMax=50, boundary='close',
+#                          mode='eig', curvature=None, propag_only=True)
+modes_list = np.array(modes_semianalytical.profiles)[
+    np.argsort(modes_semianalytical.betas)[::-1]]
+modes_coeffs = ibeam.deconstruct_by_modes(modes_list)
 plot_modes(modes_coeffs)
 
 fiber_length = 50e4  # um
-fiber_matrix = modes_eig.getPropagationMatrix(fiber_length)
+fiber_matrix = modes_semianalytical.getPropagationMatrix(fiber_length)
 tmodes_coeffs = fiber_matrix @ modes_coeffs
 
-ibeam.construct_by_modes(modes_eig.profiles, tmodes_coeffs)
+ibeam.construct_by_modes(modes_list, tmodes_coeffs)
 plot_i(ibeam)
 plot_modes(tmodes_coeffs)
 
