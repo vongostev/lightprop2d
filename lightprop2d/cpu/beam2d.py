@@ -23,7 +23,7 @@ else:
 
 
 @dataclass
-class Beam2DCPU:
+class Beam2D:
 
     area_size: float
     npoints: int

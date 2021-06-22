@@ -9,8 +9,8 @@ import pyMMF
 import numpy as np
 import matplotlib.pyplot as plt
 
-from lightprop2d import gaussian_beam, round_hole, random_wave, random_round_hole
-from lightprop2d import Beam2DGPU as Beam2D
+from lightprop2d.gpu import gaussian_beam, round_hole, random_wave, random_round_hole
+from lightprop2d.gpu import Beam2D
 
 
 # Parameters
