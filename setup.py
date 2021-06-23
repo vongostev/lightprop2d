@@ -30,6 +30,6 @@ setuptools.setup(
         'numpy',
         'scipy',
         'pyfftw',
-        'cupy>=8.3.0'
+        'cupy-cuda112'
     ],
 )
