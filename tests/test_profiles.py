@@ -4,11 +4,11 @@ Created on Wed Jun 23 18:47:39 2021
 
 @author: vonGostev
 """
-
+import __init__
 import numpy as np
 import cupy as cp
 
-from profiles import *
+from lightprop2d.profiles import *
 
 
 def _tprofiles(xp, npoints=256, dL=1e-4):
@@ -34,3 +34,8 @@ def test_numpy():
 
 def test_cupy():
     return _tprofiles(cp)
+
+
+if __name__ == "__main__":
+    test_cupy()
+    test_numpy()

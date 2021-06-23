@@ -4,8 +4,11 @@ Created on Tue Jun 22 15:21:29 2021
 
 @author: vonGostev
 """
-import cupy as cp
-
+import numpy as np
+try:
+    import cupy as cp
+except ImportError:
+    print("ImportError: CuPy didn't find, 'use_gpu' key is meaningless.")
 
 __all__ = ('plane_wave', 'random_wave', 'gaussian_beam',
            'round_hole', 'random_round_hole',
@@ -13,23 +16,30 @@ __all__ = ('plane_wave', 'random_wave', 'gaussian_beam',
            'square_slits')
 
 
+def _get_array_module(x):
+    try:
+        return cp.get_array_module(x)
+    except ImportError:
+        return np
+
+
 def plane_wave(x, y):
-    xp = cp.get_array_module(x)
+    xp = _get_array_module(x)
     return xp.ones((len(y), len(x)))
 
 
 def random_wave(x, y):
-    xp = cp.get_array_module(x)
+    xp = _get_array_module(x)
     return xp.random.random(size=(len(y), len(x)))
 
 
 def gaussian_beam(x, y, A0, rho0):
-    xp = cp.get_array_module(x)
+    xp = _get_array_module(x)
     return A0 * xp.exp(- (x ** 2 + y ** 2) / 2 / rho0 ** 2)
 
 
 def round_hole(x, y, R, x0=0, y0=0):
-    xp = cp.get_array_module(x)
+    xp = _get_array_module(x)
     d = gaussian_beam(x - x0, y - y0, 1, R)
     field = d >= 1 / xp.exp(0.5)
     return xp.array(field, dtype=xp.int8)
@@ -42,7 +52,7 @@ def random_round_hole(x, y, R, x0=0, y0=0):
 
 
 def rectangle_hole(x, y, dx, dy, x0=0, y0=0):
-    xp = cp.get_array_module(x)
+    xp = _get_array_module(x)
     return (xp.abs(x - x0) < (dx / 2)) & (xp.abs(y - y0) < (dy / 2))
 
 

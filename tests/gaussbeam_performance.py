@@ -40,4 +40,3 @@ for np in npoints:
         del beam
     except Exception as E:
         print(Beam2D.__name__, np, 'points', '[Error]', E)
-
