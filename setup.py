@@ -11,7 +11,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="lightprop2d",
-    version="0.8",
+    version="1.0a",
     author="Pavel Gostev",
     author_email="gostev.pavel@physics.msu.ru",
     description="Light propagation in free space with fourier transform",
