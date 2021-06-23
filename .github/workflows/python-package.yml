@@ -24,7 +24,7 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: cuda-toolkit
+    # - name: cuda-toolkit
     #   uses: Jimver/cuda-toolkit@v0.2.2
     #   id: cuda-toolkit
     #   with:
