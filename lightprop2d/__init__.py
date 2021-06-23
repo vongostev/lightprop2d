@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Jun  5 01:07:09 2021
+Created on Tue Jun 22 16:11:32 2021
 
-@author: Pavel Gostev
+@author: von.gostev
 """
-from .cpu import *
-from .gpu import *
+from .beam2d import Beam2D
+from .profiles import *

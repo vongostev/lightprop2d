@@ -13,24 +13,26 @@ __all__ = ('plane_wave', 'random_wave', 'gaussian_beam',
            'square_slits')
 
 
-@cp.fuse
 def plane_wave(x, y):
-    return 1
+    xp = cp.get_array_module(x)
+    return xp.ones((len(y), len(x)))
 
 
 def random_wave(x, y):
-    return cp.random.random(size=(len(x), len(y)))
+    xp = cp.get_array_module(x)
+    return xp.random.random(size=(len(y), len(x)))
 
 
-@cp.fuse
 def gaussian_beam(x, y, A0, rho0):
-    return A0 * cp.exp(- (x ** 2 + y ** 2) / 2 / rho0 ** 2)
+    xp = cp.get_array_module(x)
+    return A0 * xp.exp(- (x ** 2 + y ** 2) / 2 / rho0 ** 2)
 
 
 def round_hole(x, y, R, x0=0, y0=0):
+    xp = cp.get_array_module(x)
     d = gaussian_beam(x - x0, y - y0, 1, R)
-    field = d >= 1 / cp.exp(0.5)
-    return cp.array(field, dtype=cp.int8)
+    field = d >= 1 / xp.exp(0.5)
+    return xp.array(field, dtype=xp.int8)
 
 
 def random_round_hole(x, y, R, x0=0, y0=0):
@@ -39,9 +41,9 @@ def random_round_hole(x, y, R, x0=0, y0=0):
     return field
 
 
-@cp.fuse
 def rectangle_hole(x, y, dx, dy, x0=0, y0=0):
-    return (cp.abs(x - x0) < (dx / 2)) & (cp.abs(y - y0) < (dy / 2))
+    xp = cp.get_array_module(x)
+    return (xp.abs(x - x0) < (dx / 2)) & (xp.abs(y - y0) < (dy / 2))
 
 
 def square_hole(x, y, d, x0=0., y0=0.):

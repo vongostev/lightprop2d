@@ -49,7 +49,7 @@ def plot_modes(modes_coeffs):
 
 ibeam = Beam2D(2 * area_size * 1e-4, 2 * npoints,
                wl * 1e-4, init_field_gen=round_hole,
-               init_gen_args=((radius - 1) * 1e-4,))
+               init_gen_args=((radius - 1) * 1e-4,), use_gpu=1)
 plot_i(ibeam)
 
 
