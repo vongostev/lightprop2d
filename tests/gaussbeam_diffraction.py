@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from lightprop2d import gaussian_beam
-from lightprop2d import Beam2DGPU as Beam2D
+from lightprop2d import Beam2D
 
 # XY grid dimensions
 npoints = 1024
@@ -28,8 +28,9 @@ R = 0.01
 
 
 beam = Beam2D(area_size, npoints, wl0, init_field_gen=gaussian_beam,
-              init_gen_args=(1, R))
-
+              init_gen_args=(1, R), use_gpu=1)
+plt.imshow(beam.iprofile.get())
+plt.show()
 # Z grid for a propagation
 dz = 0.2
 z_grid = np.arange(14, 200) * dz
@@ -40,7 +41,7 @@ beam.propagate(z_grid[0])
 for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)
-    intensities.append(beam.central_intensity)
+    intensities.append(beam.central_intensity.get())
 
 z_normalized = z_grid / 2 / np.pi / beam.k0 / R ** 2
 plt.plot(z_normalized, np.array(intensities) /
