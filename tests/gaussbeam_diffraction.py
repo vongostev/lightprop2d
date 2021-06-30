@@ -44,8 +44,7 @@ for z in z_grid:
     intensities.append(beam.central_intensity.get())
 
 z_normalized = z_grid / 2 / np.pi / beam.k0 / R ** 2
-plt.plot(z_normalized, np.array(intensities) /
-         (3e10 / 8 / np.pi), label='Calc')
+plt.plot(z_normalized, np.array(intensities), label='Calc')
 plt.plot(z_normalized, 1 / (1 + z_normalized ** 2),
          '--', label='Theory')
 plt.xlabel(r'$z / z_d$')
