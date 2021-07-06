@@ -56,18 +56,19 @@ class Beam2D:
 
     def __post_init__(self):
 
+        # Choose module for arrays: numpy of cupy with gpu speed up
         if self.use_gpu and _using_cupy:
             self.xp = cp
         else:
             self.xp = np
-
+        # Choose complex bits number
         if self.complex_bits == 64:
             self.complex = self.xp.complex64
         elif self.complex_bits == 128:
             self.complex = self.xp.complex128
-
+        # Construct X, Y, Kx, Ky, Kz grids, k0 and dL
         self._construct_grids()
-
+        # Initialize a field with the given function of array
         if self.init_field_gen is not None:
             self.field = self._xp(
                 self.init_field_gen(
@@ -82,11 +83,13 @@ class Beam2D:
         self.spectrum = self._fft2(self.field)
 
     def _np(self, data):
+        # Return numpy array from numpy or cupy array
         if self.xp == cp:
             return data.get()
         return data
 
     def _xp(self, data):
+        # Return self.xp array from numpy or cupy array
         if self.xp == cp:
             return self.xp.array(data)
         else:
@@ -101,11 +104,29 @@ class Beam2D:
         return self.xp.fft.fftfreq(npoints, d=dL)
 
     def _fft2(self, data):
+        """
+        2D FFT alias with a choise of the fft module
+
+        Parameters
+        ----------
+        data : self.xp.ndarray
+            2d signal data with type of self.complex.
+
+        """
         if _using_pyfftw and not self.use_gpu:
             return fft2(data, **_fftargs)
         return self.xp.fft.fft2(data)
 
     def _ifft2(self, data):
+        """
+        2D Inverse FFT alias with a choise of the fft module
+
+        Parameters
+        ----------
+        data : self.xp.ndarray
+            2d signal data with type of self.complex.
+
+        """
         if _using_pyfftw and not self.use_gpu:
             return ifft2(data, **_fftargs)
         return self.xp.fft.ifft2(data)
