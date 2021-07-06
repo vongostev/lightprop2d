@@ -9,7 +9,6 @@ JOSA A, 15(4), 857-867.
 import warnings
 import numpy as np
 from dataclasses import dataclass
-from scipy.signal import peak_widths
 from scipy.interpolate import interp2d
 
 try:
@@ -21,7 +20,6 @@ except ImportError as E:
         f"ImportError: {E}, 'use_gpu' key is meaningless.")
 
 try:
-    import pyfftw
     from pyfftw.interfaces.numpy_fft import fft2, ifft2
     _fftargs = {'planner_effort': 'FFTW_ESTIMATE',
                 'overwrite_input': True,
