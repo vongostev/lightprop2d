@@ -418,7 +418,16 @@ class Beam2D:
         self.field = self.xp.einsum(
             'ijk,i->jk', modes_list_reshape, modes_coeffs)
         self.spectrum = self._fft2(self.field)
-
+    
+    @property
+    def centroid(self):
+        n = self.npoints // 2
+        Y, X = self.xp.mgrid[-n:n, -n:n] * self.dL
+        I = self.iprofile
+        Xc = self.xp.average(X, weights=I)
+        Yc = self.xp.average(Y, weights=I)
+        return Xc, Yc
+        
     @property
     def D4sigma(self):
         """
@@ -428,9 +437,7 @@ class Beam2D:
         n = self.npoints // 2
         Y, X = self.xp.mgrid[-n:n, -n:n] * self.dL
         I = self.iprofile
-        I[I < self.xp.max(I) / self.xp.exp(2)] = 0
-        Xc = self.xp.average(X, weights=I)
-        Yc = self.xp.average(Y, weights=I)
+        Xc, Yc = self.centroid
         def sigma(x, xc): return self.xp.sqrt(
             self.xp.average((x-xc)*(x-xc), weights=I))
         return 4 * sigma(X, Xc), 4 * sigma(Y, Yc)
