@@ -46,18 +46,19 @@ def iprofile_imshow(beam, ax, ncrop, center=False, title=''):
 
 
 def iprofile_plot(beam, ax, ncrop, axis=0, offset=(0, 0), calc_center=True, title=''):
-    xl, xt, yl, yt, xnc, ync =  iprofile_crop(beam, ncrop)
+    xl, xt, yl, yt, xnc, ync = iprofile_crop(beam, ncrop)
     x_offset, y_offset = offset
     if not calc_center:
         xnc, ync = beam.npoints // 2, beam.npoints // 2
     if axis == 0:
-        ax.plot(beam.X[xl:xt] / mm, _n(beam.iprofile[ync - y_offset, x_offset:])[xl:xt])
+        ax.plot(beam.X[xl:xt] / mm,
+                _n(beam.iprofile[ync - y_offset, x_offset:])[xl:xt])
     if axis == 1:
-        ax.plot(beam.X[yl:yt] / mm, _n(beam.iprofile[y_offset:, xnc - x_offset])[yl:yt])
+        ax.plot(beam.X[yl:yt] / mm,
+                _n(beam.iprofile[y_offset:, xnc - x_offset])[yl:yt])
         # ax.set_xlabel('y, mm')
     ax.set_ylabel('$I / \max(I)$')
     ax.set_title(title)
-
 
 
 # Z=0 Profile reading
@@ -72,7 +73,7 @@ beam_profile_z0 = imread(pjoin(img_folder, img_z0), key=0)[:, :, 0]
 beam_profile_z0_cropped = beam_profile_z0[:, 128:-128].astype(np.float64)
 # Intensity aligning
 intensity_transform_v = np.linspace(
-    200, 1, beam_profile_z0_cropped.shape[1]).reshape((-1,1)) ** 2
+    200, 1, beam_profile_z0_cropped.shape[1]).reshape((-1, 1)) ** 2
 intensity_transform_matrix = np.repeat(
     intensity_transform_v, beam_profile_z0_cropped.shape[0], axis=1)
 beam_profile_z0_cropped *= intensity_transform_matrix
@@ -90,26 +91,29 @@ beam_profile_prop = imread(pjoin(img_folder, img_prop), key=0)[:, :, 0]
 beam_profile_prop_cropped = beam_profile_prop[:, 128:-128].astype(np.float64)
 # Image aligning
 intensity_transform_v = np.linspace(
-    100, 1, beam_profile_z0_cropped.shape[1]).reshape((-1,1)) ** 1.5
+    100, 1, beam_profile_z0_cropped.shape[1]).reshape((-1, 1)) ** 1.5
 intensity_transform_matrix = np.repeat(
     intensity_transform_v, beam_profile_z0_cropped.shape[0], axis=1)
 beam_profile_prop_cropped *= intensity_transform_matrix
 
 central_profile_prop = _n(beam_profile_prop_cropped[npoints // 2])
-exp_beam_prop = Beam2D(area_size, npoints, wl, init_field=beam_profile_prop_cropped)
+exp_beam_prop = Beam2D(area_size, npoints, wl,
+                       init_field=beam_profile_prop_cropped)
 
 x_offset = 7
 y_offset = 13
 
 # Calculated propagation from the experimental profile
 beam_calc = Beam2D(area_size, npoints, wl, init_field=beam_profile_z0_cropped)
-beam_calc.coordinate_filter(f_gen=round_hole, fargs=(hole_radius, -y_offset*dx, x_offset*dx))
+beam_calc.coordinate_filter(f_gen=round_hole, fargs=(
+    hole_radius, -y_offset*dx, x_offset*dx))
 beam_calc.propagate(distance)
 
 # Calculated propagation from the gaussian profile
 beam_gaussian = Beam2D(area_size, npoints, wl, init_field_gen=gaussian_beam,
                        init_gen_args=(1, 1100*um))
-beam_gaussian.coordinate_filter(f_gen=round_hole, fargs=(hole_radius, -y_offset*dx, x_offset*dx))
+beam_gaussian.coordinate_filter(f_gen=round_hole, fargs=(
+    hole_radius, -y_offset*dx, x_offset*dx))
 beam_gaussian.propagate(distance)
 
 beam_exp = Beam2D(area_size, npoints, wl, init_field=beam_profile_prop_cropped)
