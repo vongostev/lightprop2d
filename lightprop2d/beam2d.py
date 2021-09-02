@@ -84,13 +84,15 @@ class Beam2D:
 
     def _np(self, data):
         # Return numpy array from numpy or cupy array
-        if self.xp == cp:
+        if self.xp.__name__ == 'cp':
             return data.get()
         return data
 
     def _xp(self, data):
         # Return self.xp array from numpy or cupy array
-        if self.xp == cp:
+        if not _using_cupy:
+            return data
+        if self.xp.__name__ == 'cp':
             return self.xp.array(data)
         else:
             if type(data) == np.ndarray:
