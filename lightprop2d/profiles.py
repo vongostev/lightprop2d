@@ -19,7 +19,7 @@ __all__ = ('plane_wave', 'random_wave', 'gaussian_beam',
 def _get_array_module(x):
     try:
         return cp.get_array_module(x)
-    except ImportError:
+    except Exception:
         return np
 
 
