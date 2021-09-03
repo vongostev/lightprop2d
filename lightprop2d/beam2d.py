@@ -202,7 +202,15 @@ class Beam2D:
             self.spectrum *= self._xp(f_init)
         self.field = self._ifft2(self.spectrum)
 
-    def expand(self, area_size):
+    def expand(self, area_size: float):
+        """
+        Expand the beam calculation area to the given area_size.
+
+        Parameters
+        ----------
+        area_size : float
+            Wanted area size in centimetres.
+        """
         old_npoints = self.npoints
         self.npoints *= int(area_size / self.area_size)
         self.area_size = area_size
@@ -423,12 +431,22 @@ class Beam2D:
     
     @property
     def centroid(self):
+        """
+        Returns the centroid of the intensity distribution.
+        The centroid is the arithmetic mean of all points weighted by the intensity profile.
+        
+        Returns
+        -------
+        Tuple[float, float, int, int]
+            The coordinates and the closests array indices of the centroid: Xc, Yc, nxc, nyc.
+
+        """
         n = self.npoints // 2
         Y, X = self.xp.mgrid[-n:n, -n:n] * self.dL
         I = self.iprofile
         Xc = self.xp.average(X, weights=I)
         Yc = self.xp.average(Y, weights=I)
-        return Xc, Yc
+        return Xc, Yc, int(Xc / self.dL), int(Yc / self.dL)
         
     @property
     def D4sigma(self):
@@ -439,7 +457,7 @@ class Beam2D:
         n = self.npoints // 2
         Y, X = self.xp.mgrid[-n:n, -n:n] * self.dL
         I = self.iprofile
-        Xc, Yc = self.centroid
+        Xc, Yc, _, _ = self.centroid
         def sigma(x, xc): return self.xp.sqrt(
             self.xp.average((x-xc)*(x-xc), weights=I))
         return 4 * sigma(X, Xc), 4 * sigma(Y, Yc)
@@ -450,15 +468,19 @@ class Beam2D:
         Intensity profile of the field A
 
         .. math:: I(r) = |A(r)|^2
-
         """
         return self.xp.abs(self.field) ** 2
 
     @property
-    def central_intensity(self):
-        n = self.npoints // 2
-        return self.iprofile[n, n]
+    def centroid_intensity(self):
+        """
+        Intensity value in the centroid coordinates.
+        
+        .. math:: I_c = |A(Xc, Yc)|^2
+        """
+        _, _, nxc, nyc = self.centroid
+        return self.iprofile[nyc, nxc]
 
     def __repr__(self):
         return (f"Beam {self.npoints:d}x{self.npoints:d} points {self.area_size:.3g}x{self.area_size:.3g} cm " +
-                f"<wl={self.wl * 1e7:.3g} nm, z={self.z:.3g} cm>")
+                f"<wl={self.wl / nm:.3g} nm, z={self.z:.3g} cm>")

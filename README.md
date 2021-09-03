@@ -8,21 +8,25 @@ You can use both numpy and cupy backends with `use_gpu` key of Beam2D class.
 
 You can install it as follows
 ```
-pip install lightprop2d
+pip install lightprop2d=1.0rc1
 ```
+
+Check out the [Code Reference](https://github.com/vongostev/lightprop2d/docs/Reference.md) for details on the 'Beam2D' methods.
+
+
 ### Example 1: Random beam propagation
 ```python
 import matplotlib.pyplot as plt
-from lightprop2d import Beam2D, random_round_hole
+from lightprop2d import Beam2D, random_round_hole, um, nm
 
 # All input data are in cm
 # XY grid dimensions
 npoints = 256
 # XY grid widening
-beam_radius = 25e-4 # 25 um
-area_size = 200e-4 # 200 um
+beam_radius = 25*um # 25 um
+area_size = 200*um # 200 um
 # Wavelength in cm
-wl0 = 632e-7
+wl0 = 632*nm
 
 beam = Beam2D(area_size, npoints, wl0, init_field_gen=random_round_hole, 
               init_gen_args=(beam_radius,))
@@ -30,7 +34,7 @@ beam = Beam2D(area_size, npoints, wl0, init_field_gen=random_round_hole,
 plt.imshow(beam.iprofile)
 plt.show()
 
-beam.propagate(100e-4)
+beam.propagate(100*um)
 
 plt.imshow(beam.iprofile)
 plt.show()
