@@ -84,7 +84,7 @@ class Beam2D:
 
     def _np(self, data):
         # Return numpy array from numpy or cupy array
-        if self.xp.__name__ == 'cp':
+        if self.xp.__name__ == 'cupy':
             return data.get()
         return data
 
@@ -92,7 +92,7 @@ class Beam2D:
         # Return self.xp array from numpy or cupy array
         if not _using_cupy:
             return data
-        if self.xp.__name__ == 'cp':
+        if self.xp.__name__ == 'cupy':
             return self.xp.array(data)
         else:
             if type(data) == np.ndarray:
@@ -428,13 +428,13 @@ class Beam2D:
         self.field = self.xp.einsum(
             'ijk,i->jk', modes_list_reshape, modes_coeffs)
         self.spectrum = self._fft2(self.field)
-    
+
     @property
     def centroid(self):
         """
         Returns the centroid of the intensity distribution.
         The centroid is the arithmetic mean of all points weighted by the intensity profile.
-        
+
         Returns
         -------
         Tuple[float, float, int, int]
@@ -447,7 +447,7 @@ class Beam2D:
         Xc = self.xp.average(X, weights=I)
         Yc = self.xp.average(Y, weights=I)
         return Xc, Yc, int(Xc / self.dL), int(Yc / self.dL)
-        
+
     @property
     def D4sigma(self):
         """
@@ -475,7 +475,7 @@ class Beam2D:
     def centroid_intensity(self):
         """
         Intensity value in the centroid coordinates.
-        
+
         .. math:: I_c = |A(Xc, Yc)|^2
         """
         _, _, nxc, nyc = self.centroid
