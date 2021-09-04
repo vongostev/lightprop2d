@@ -358,7 +358,7 @@ class Beam2D:
 
         Parameters
         ----------
-        modes_list : iterable
+        modes_list : Tuple[ndarray, list]
             List of flattened modes. Unified with pyMMF
 
         Returns
@@ -457,6 +457,7 @@ class Beam2D:
         n = self.npoints // 2
         Y, X = self.xp.mgrid[-n:n, -n:n] * self.dL
         I = self.iprofile
+        I[I < self.xp.max(I) / self.xp.exp(4)] = 0
         Xc, Yc, _, _ = self.centroid
         def sigma(x, xc): return self.xp.sqrt(
             self.xp.average((x-xc)*(x-xc), weights=I))
