@@ -1,3 +1,0 @@
-loaders:
-- type: python
-  search_path: [../lightprop2d]
