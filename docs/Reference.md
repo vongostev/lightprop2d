@@ -13,10 +13,10 @@ JOSA A, 15(4), 857-867.
  class Beam2D 
 ```
 
-2D field propagation.
+Electromagnetic field propagation using spectral method.
 
-Simple class to transform intitial field distribution using fourier transformation
-from x-y field profile to kx-ky spectrum.
+Simple class to transform intitial field distribution using 2D fourier 
+transformation from x-y field profile to kx-ky spectrum.
 You can use both numpy and cupy backends with use_gpu key of the class.
 
 | Parameters    | Type             | Doc             |
@@ -28,10 +28,10 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 |     xp | object = np |         Backend module. numpy (np) or cupy (cp). Controlled by 'use_gpu' key | 
 |     init_field | xp.ndarray = None |         Initial field distribution given as an array | 
 |     init_field_gen | object = None |         Initial field distribution given as a generating function | 
-|     init_gen_args | tuple = () |         Additional arguments of 'init_field_gen' excluding first two (X grid and Y grid) | 
+|     init_gen_args | tuple = () |         Additional arguments of 'init_field_gen' excluding         the first two (X grid and Y grid) | 
 |     complex_bits | int = 128 |         Precision of complex numbers. Can be 64 or 128 | 
 |     use_gpu | bool = False |         Backend choice.        If True, the class uses cupy backend with GPU support.        If False, the class uses numpy backend | 
-|     unsafe_fft | bool = False |         Check physical correctness of spectrum calculations            'Critical K⟂  must be bigger than self.npoints // 2'        If True, this check is disabled. | 
+|     unsafe_fft | bool = False |         Check physical correctness of spectrum calculations            'Critical K⟂  must be bigger than self.npoints // 2'.        If True, this check is disabled | 
 
 
 --------- 
@@ -43,9 +43,9 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 |:-------|:----------------|
 | _np | Convert cupy or numpy arrays to numpy array. | 
 | _xp | Convert cupy or numpy arrays to self.xp array. | 
-| _k_grid | Make a grid for Kx or Ky value. | 
-| _fft2 | 2D FFT alias with a choise of the fft module. | 
-| _ifft2 | 2D Inverse FFT alias with a choise of the fft module. | 
+| _k_grid | Return a grid for Kx or Ky values. | 
+| _fft2 | 2D FFT alias with a choice of the fft module. | 
+| _ifft2 | 2D Inverse FFT alias with a choice of the fft module. | 
 | _construct_grids | Construction of X, Y, Kx, Ky grids. | 
 | coordinate_filter | Apply a mask to the field profile. | 
 | spectral_filter | Apply a mask to the field spectrum. | 
@@ -55,13 +55,13 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 | lens | Lens representated as a phase multiplicator. | 
 | lens_image | Image transmitting through the lens between optically conjugated planes. | 
 | _expand_basis | Expand modes basis to the self.npoints. | 
-| deconstruct_by_modes | Return decomposed coefficients :math:`\mathbf{C}` in given mode basis :math:`\mathbf{M}(r). | 
-| fast_deconstruct_by_modes | Return decomposed coefficients in given mode basis as least-square solution. | 
-| construct_by_modes | self.field construction from the givn modes and coefficients. | 
-| centroid | Returns the centroid of the intensity distribution. | 
-| D4sigma | The width :math:`D=4\sigma`of the intensity distribution. | 
-| iprofile | Intensity profile of the field . | 
-| centroid_intensity | Intensity value in the centroid coordinates. | 
+| deconstruct_by_modes | Return decomposed coefficients in given mode basis as a least-square solution. | 
+| fast_deconstruct_by_modes | Return decomposed coefficients in given mode basis as a least-square solution. Fast version. | 
+| construct_by_modes | Construct self.field from the given modes and modes coefficients. | 
+| centroid | Return the centroid of the intensity distribution. | 
+| D4sigma | Return the width :math:`D=4\sigma` of the intensity distribution. | 
+| iprofile | Return the intensity profile of the field . | 
+| centroid_intensity | Return the intensity value in the centroid coordinates. | 
  
  
 
@@ -110,7 +110,7 @@ Convert cupy or numpy arrays to self.xp array.
 ```
 
 
-Make a grid for Kx or Ky value.
+Return a grid for Kx or Ky values.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
@@ -130,7 +130,7 @@ Make a grid for Kx or Ky value.
 ```
 
 
-2D FFT alias with a choise of the fft module.
+2D FFT alias with a choice of the fft module.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
@@ -144,7 +144,7 @@ Make a grid for Kx or Ky value.
 ```
 
 
-2D Inverse FFT alias with a choise of the fft module.
+2D Inverse FFT alias with a choice of the fft module.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
@@ -263,8 +263,10 @@ A field propagation with Fourier transformation.
 
 #### Notes
 
-With field as `A` we can write in paraxial approximation
-.. math::A(z) = \int d^2k e^{-ikr - i k_z(r) z} \int A(0)e^{ikr}d^2r
+With field as <img src="https://render.githubusercontent.com/render/math?math=A"> we can write in paraxial approximation
+
+<img src="https://render.githubusercontent.com/render/math?math=A(z) = \int d^2k e^{-ikr - i k_z(r) z} \int A(0)e^{ikr}d^2r">
+
 In discrete way we can describe it with FFT:
 
 
@@ -274,7 +276,7 @@ In discrete way we can describe it with FFT:
 ```
 
 
-:math:`k_z` must be greater than :math:`max(k_x),max(k_y)`
+<img src="https://render.githubusercontent.com/render/math?math=k_z"> must be greater than <img src="https://render.githubusercontent.com/render/math?math=\max(k_x),\max(k_y)">
 
 
 ### lens
@@ -295,9 +297,11 @@ Lens representated as a phase multiplicator.
 
 #### Notes
 
-We can describe a field after the Lens :math:`A'(r)` as follows
-.. math::A'(r) = A(r) e^{ik_0 r^2/2f}
-Here :math:`A(r)` is a field before lens and phase multiplicator describes a lens.
+We can describe a field after the Lens <img src="https://render.githubusercontent.com/render/math?math=A'(r)"> as follows
+
+<img src="https://render.githubusercontent.com/render/math?math=A'(r) = A(r) e^{ik_0 r^2/2f}">
+
+Here <img src="https://render.githubusercontent.com/render/math?math=A(r)"> is a field before lens and phase multiplicator describes a lens.
 
 
 
@@ -344,13 +348,18 @@ Expand modes basis to the self.npoints.
 ```
 
 
-Return decomposed coefficients :math:`\mathbf{C}` in given mode basis :math:`\mathbf{M}(r).
+Return decomposed coefficients in given mode basis as a least-square solution.
 
-as a least-square solution
-Here the field :math:`A(r)` is described as
-.. math::A(r) = \sum_i C_i M_i (r)
-Where :math:`\mathbf{C}` is calculated as
-.. math::\mathbf{C} = LSTSQ(\mathbf{M}(r), A(r))
+Here denoted <img src="https://render.githubusercontent.com/render/math?math=\mathbf{M}(r)"> is the given mode basis,
+<img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}"> is modes coefficients
+Here the field <img src="https://render.githubusercontent.com/render/math?math=A(r)"> is described as
+
+<img src="https://render.githubusercontent.com/render/math?math=A(r) = \sum_i C_i M_i (r)">
+
+Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}"> is calculated as
+
+<img src="https://render.githubusercontent.com/render/math?math=\mathbf{C} = LSTSQ(\mathbf{M}(r), A(r))">
+
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
@@ -369,7 +378,7 @@ Where :math:`\mathbf{C}` is calculated as
 ```
 
 
-Return decomposed coefficients in given mode basis as least-square solution.
+Return decomposed coefficients in given mode basis as a least-square solution. Fast version.
 
 Fast version with pre-computations 
 Results can be a little different from `deconstruct_by_modes` ones 
@@ -383,7 +392,7 @@ because of full set of singular values is used.
 
 | Returns    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_list | self.xp.ndarray |             Modes coefficients.             | 
+|         modes_list | self.xp.ndarray |             Modes coefficients. | 
 
 
 ------- 
@@ -406,12 +415,14 @@ Linear system matrix is calculated so
 ```
 
 
+The field <img src="https://render.githubusercontent.com/render/math?math=A(r)"> is described as
 
-The field :math:`A(r)` is described as
-.. math::A(r)=sum_i C_i M_i(r)
-Where :math:`mathbf{C}` is calculated as
-.. math: : mathbf{C} = SOLVE(mathbf{M}(r)^Tmathbf{M}, A(r)) equiv
-(mathbf{M}(r)^Tmathbf{M})^{-1}A(r)
+<img src="https://render.githubusercontent.com/render/math?math=A(r)=\sum_i C_i M_i(r)">
+
+Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}"> is calculated as
+
+<img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}=SOLVE(\mathbf{M}(r)^T\mathbf{M},A(r)) \equiv (\mathbf{M}(r)^T\mathbf{M})^{-1}A(r)">
+
 
 
 ### construct_by_modes
@@ -421,7 +432,7 @@ Where :math:`mathbf{C}` is calculated as
 ```
 
 
-self.field construction from the givn modes and coefficients.
+Construct self.field from the given modes and modes coefficients.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
@@ -436,7 +447,7 @@ self.field construction from the givn modes and coefficients.
 ```
 
 
-Returns the centroid of the intensity distribution.
+Return the centroid of the intensity distribution.
 
 The centroid is the arithmetic mean of all points weighted by the intensity profile.
 
@@ -452,7 +463,7 @@ The centroid is the arithmetic mean of all points weighted by the intensity prof
 ```
 
 
-The width :math:`D=4\sigma`of the intensity distribution.
+Return the width <img src="https://render.githubusercontent.com/render/math?math=D=4\sigma"> of the intensity distribution.
 
 | Returns    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
@@ -466,9 +477,11 @@ The width :math:`D=4\sigma`of the intensity distribution.
 ```
 
 
-Intensity profile of the field .
+Return the intensity profile of the field .
 
-.. math::I(r)=|A(r)|^2
+
+<img src="https://render.githubusercontent.com/render/math?math=I(r)=|A(r)|^2">
+
 
 | Returns    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
@@ -482,10 +495,12 @@ Intensity profile of the field .
 ```
 
 
-Intensity value in the centroid coordinates.
+Return the intensity value in the centroid coordinates.
 
-.. math::I_c=|A(Xc,Yc)|^2
+
+<img src="https://render.githubusercontent.com/render/math?math=I_c=|A(Xc,Yc)|^2">
+
 
 | Returns    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         centroid_intensity | float |             Intensity value in the centroid coordinates. | 
+|         centroid_intensity | float |             The light intensity value in the centroid coordinates. | 

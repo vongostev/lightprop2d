@@ -1,0 +1,3 @@
+[submodule "markdoc"]
+	path = docs
+	url = https://github.com/vongostev/markdoc

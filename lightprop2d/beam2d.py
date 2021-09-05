@@ -42,10 +42,10 @@ m = 100
 
 @dataclass
 class Beam2D:
-    """2D field propagation.
+    """Electromagnetic field propagation using spectral method.
 
-    Simple class to transform intitial field distribution using fourier transformation
-    from x-y field profile to kx-ky spectrum.
+    Simple class to transform intitial field distribution using 2D fourier 
+    transformation from x-y field profile to kx-ky spectrum.
     You can use both numpy and cupy backends with use_gpu key of the class.
 
     Parameters
@@ -65,7 +65,8 @@ class Beam2D:
     init_field_gen : object = None
         Initial field distribution given as a generating function
     init_gen_args : tuple = ()
-        Additional arguments of 'init_field_gen' excluding first two (X grid and Y grid)
+        Additional arguments of 'init_field_gen' excluding 
+        the first two (X grid and Y grid)
     complex_bits : int = 128
         Precision of complex numbers. Can be 64 or 128
     use_gpu : bool = False
@@ -74,8 +75,8 @@ class Beam2D:
         If False, the class uses numpy backend
     unsafe_fft : bool = False
         Check physical correctness of spectrum calculations
-            'Critical K⟂  must be bigger than self.npoints // 2'
-        If True, this check is disabled.
+            'Critical K⟂  must be bigger than self.npoints // 2'.
+        If True, this check is disabled
 
     """
 
@@ -181,7 +182,7 @@ class Beam2D:
             "Unknown type of the given array, not numpy or cupy array")
 
     def _k_grid(self, dL: float, npoints: int):
-        """Make a grid for Kx or Ky values
+        """Return a grid for Kx or Ky values.
 
         Parameters
         ----------
@@ -199,7 +200,7 @@ class Beam2D:
         return self.xp.fft.fftfreq(npoints, d=dL)
 
     def _fft2(self, data):
-        """2D FFT alias with a choise of the fft module.
+        """2D FFT alias with a choice of the fft module.
 
         Parameters
         ----------
@@ -211,7 +212,7 @@ class Beam2D:
         return self.xp.fft.fft2(data)
 
     def _ifft2(self, data):
-        """2D Inverse FFT alias with a choise of the fft module.
+        """2D Inverse FFT alias with a choice of the fft module.
 
         Parameters
         ----------
@@ -360,7 +361,7 @@ class Beam2D:
 
         Notes
         -----
-        With field as `A` we can write in paraxial approximation
+        With field as :math:`A` we can write in paraxial approximation
 
         .. math::A(z) = \int d^2k e^{-ikr - i k_z(r) z} \int A(0)e^{ikr}d^2r
 
@@ -450,8 +451,10 @@ class Beam2D:
         return np.array([m.reshape((Nb, Nb)) for m in modes_list])
 
     def deconstruct_by_modes(self, modes_list):
-        r"""Return decomposed coefficients :math:`\mathbf{C}` in given mode basis :math:`\mathbf{M}(r)`
-        as a least-square solution
+        r"""Return decomposed coefficients in given mode basis as a least-square solution.
+
+        Here denoted :math:`\mathbf{M}(r)` is the given mode basis,
+        :math:`\mathbf{C}` is modes coefficients
 
         Here the field :math:`A(r)` is described as
 
@@ -482,7 +485,7 @@ class Beam2D:
         return self.modes_coeffs
 
     def fast_deconstruct_by_modes(self, modes_matrix_t,  modes_matrix_dot_t):
-        r"""Return decomposed coefficients in given mode basis as least-square solution.
+        r"""Return decomposed coefficients in given mode basis as a least-square solution. Fast version.
 
         Fast version with pre-computations 
         Results can be a little different from `deconstruct_by_modes` ones 
@@ -500,7 +503,7 @@ class Beam2D:
         -------
         modes_list : self.xp.ndarray
             Modes coefficients.
-            
+
         Notes
         -----
         If modes are flatten then modes_matrix_t is calculated as follows
@@ -508,15 +511,14 @@ class Beam2D:
 
         Linear system matrix is calculated so
             >>> modes_matrix.T.dot(modes_matrix)
-            
+
         The field :math:`A(r)` is described as
 
         .. math::A(r)=\sum_i C_i M_i(r)
 
         Where :math:`\mathbf{C}` is calculated as
 
-        .. math: : \mathbf{C} = SOLVE(\mathbf{M}(r)^T\mathbf{M}, A(r)) \equiv
-            (\mathbf{M}(r)^T\mathbf{M})^{-1}A(r)
+        .. math::\mathbf{C}=SOLVE(\mathbf{M}(r)^T\mathbf{M},A(r)) \equiv (\mathbf{M}(r)^T\mathbf{M})^{-1}A(r)
         """
         modes_matrix_t = self._xp(modes_matrix_t)
         modes_matrix_dot_t = self._xp(modes_matrix_dot_t)
@@ -530,7 +532,7 @@ class Beam2D:
         return self.modes_coeffs
 
     def construct_by_modes(self, modes_list, modes_coeffs):
-        """self.field construction from the givn modes and coefficients.
+        """Construct self.field from the given modes and modes coefficients.
 
         Parameters
         ----------
@@ -547,7 +549,7 @@ class Beam2D:
 
     @property
     def centroid(self):
-        """Returns the centroid of the intensity distribution.
+        """Return the centroid of the intensity distribution.
 
         The centroid is the arithmetic mean of all points weighted by the intensity profile.
 
@@ -565,7 +567,7 @@ class Beam2D:
 
     @property
     def D4sigma(self):
-        r"""The width :math:`D=4\sigma`  of the intensity distribution.
+        r"""Return the width :math:`D=4\sigma` of the intensity distribution.
 
         Returns
         -------
@@ -585,7 +587,7 @@ class Beam2D:
 
     @property
     def iprofile(self):
-        """Intensity profile of the field A
+        """Return the intensity profile of the field A
 
         .. math::I(r)=|A(r)|^2
 
@@ -598,14 +600,14 @@ class Beam2D:
 
     @property
     def centroid_intensity(self):
-        """Intensity value in the centroid coordinates.
+        """Return the intensity value in the centroid coordinates.
 
         .. math::I_c=|A(Xc,Yc)|^2
 
         Returns
         -------
         centroid_intensity : float
-            Intensity value in the centroid coordinates.
+            The light intensity value in the centroid coordinates.
         """
         _, _, nxc, nyc = self.centroid
         return self.iprofile[nyc, nxc]
