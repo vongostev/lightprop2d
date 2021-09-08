@@ -563,7 +563,7 @@ class Beam2D:
         I = self.iprofile
         Xc = self.xp.average(X, weights=I)
         Yc = self.xp.average(Y, weights=I)
-        return Xc, Yc, int(Xc / self.dL), int(Yc / self.dL)
+        return Xc, Yc, int(Xc / self.dL) + n, int(Yc / self.dL) + n
 
     @property
     def D4sigma(self):

@@ -17,9 +17,7 @@ def _n(p):
 
 
 def iprofile_crop(beam, ncrop):
-    xc, yc = beam.centroid
-    xnc = int((xc - np.min(beam.X)) // beam.dL)
-    ync = int((yc - np.min(beam.Y)) // beam.dL)
+    xc, yc, xnc, ync = beam.centroid
 
     xl = xnc - ncrop // 2
     xt = xnc + ncrop // 2
@@ -35,7 +33,7 @@ def iprofile_imshow(beam, ax, ncrop, center=False, title=''):
     ax.imshow(_n(beam.iprofile)[yl:yt, xl:xt], extent=img_extent)
 
     if not center:
-        xc, yc = beam.centroid
+        xc, yc, _, _ = beam.centroid
     else:
         xc, yc = center
     ax.axvline(xc / mm, color='black', linestyle='--')
