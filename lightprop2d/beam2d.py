@@ -599,6 +599,19 @@ class Beam2D:
         return self.xp.abs(self.field) ** 2
 
     @property
+    def phiprofile(self):
+        """Return the phase profile of the field A
+
+        .. math::\varphi(r)=\text{arg}(A(r))
+
+        Returns
+        -------
+        iprofile : self.xp.ndarray
+            Phase profile of the field A
+        """
+        return self.xp.angle(self.field)
+
+    @property
     def centroid_intensity(self):
         """Return the intensity value in the centroid coordinates.
 

@@ -27,7 +27,7 @@ RAND = 1
 
 def plot_i(ibeam):
     area_size = ibeam.area_size
-    plt.imshow(ibeam.iprofile,
+    plt.imshow(ibeam.iprofile.get(),
                extent=(-area_size / 2e-4, area_size / 2e-4, -area_size / 2e-4, area_size / 2e-4))
     plt.xlabel(r'x, $\mu m$')
     plt.ylabel(r'y, $\mu m$')

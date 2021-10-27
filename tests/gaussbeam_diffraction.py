@@ -41,7 +41,7 @@ beam.propagate(z_grid[0])
 for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)
-    intensities.append(beam.central_intensity.get())
+    intensities.append(beam.centroid_intensity.get())
 
 z_normalized = z_grid / 2 / np.pi / beam.k0 / R ** 2
 plt.plot(z_normalized, np.array(intensities), label='Calc')
@@ -51,5 +51,5 @@ plt.xlabel(r'$z / z_d$')
 plt.ylabel(r'$\frac{I_0(z)}{I_0(0)}$' + '\t   ', rotation=0, fontsize=14)
 plt.legend(frameon=False)
 plt.tight_layout()
-plt.savefig('img/gaussbeam_diffraction.png', dpi=300)
+# plt.savefig('img/gaussbeam_diffraction.png', dpi=300)
 plt.show()
