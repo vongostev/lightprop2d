@@ -11,6 +11,16 @@ You can install it as follows
 pip install lightprop2d==1.0
 ```
 
+If you want to use `cupy` to accelerate calculations, you must install extra packages with a command
+```
+pip install lightprop2d[gpu]
+```
+
+If you want to use `pyfftw` to accelerate calculations, you must install extra packages with a command
+```
+pip install lightprop2d[fftw]
+```
+
 Check out the [Code Reference](docs/Reference.md) for details on the 'Beam2D' methods.
 
 

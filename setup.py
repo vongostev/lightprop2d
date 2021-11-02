@@ -11,7 +11,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="lightprop2d",
-    version="1.0",
+    version="1.0.1",
     author="Pavel Gostev",
     author_email="gostev.pavel@physics.msu.ru",
     description="Light propagation in free space with fourier transform",
@@ -28,8 +28,10 @@ setuptools.setup(
     include_package_data=True,
     install_requires=[
         'numpy',
-        'scipy',
-        'pyfftw',
-        'cupy-cuda112'
+        'scipy'
     ],
+    extras_requires={
+        'fftw': 'pyfftw',
+        'gpu': 'cupy-cuda112'
+    },
 )
