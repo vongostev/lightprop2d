@@ -61,6 +61,7 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 | centroid | Return the centroid of the intensity distribution. | 
 | D4sigma | Return the width :math:`D=4\sigma` of the intensity distribution. | 
 | iprofile | Return the intensity profile of the field . | 
+| phiprofile | Return the phase profile of the field . | 
 | centroid_intensity | Return the intensity value in the centroid coordinates. | 
  
  
@@ -486,6 +487,24 @@ Return the intensity profile of the field .
 | Returns    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
 |         iprofile | self.xp.ndarray |             Intensity profile of the field A | 
+
+
+### phiprofile
+
+``` python 
+    phiprofile() 
+```
+
+
+Return the phase profile of the field .
+
+
+<img src="https://render.githubusercontent.com/render/math?math=\varphi(r)=\text{arg}(A(r))">
+
+
+| Returns    | Type             | Doc             |
+|:-------|:-----------------|:----------------|
+|         iprofile | self.xp.ndarray |             Phase profile of the field A | 
 
 
 ### centroid_intensity
