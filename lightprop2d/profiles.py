@@ -23,14 +23,24 @@ def _get_array_module(x):
         return np
 
 
+def binning(field, binning_order):
+    xp = _get_array_module(field)
+    return xp.kron(field, xp.ones((binning_order, binning_order)))
+
+
 def plane_wave(x, y):
     xp = _get_array_module(x)
     return xp.ones((len(y), len(x)))
 
 
-def random_wave(x, y):
+def random_wave(x, y, binning_order=1):
     xp = _get_array_module(x)
-    return xp.random.random(size=(len(y), len(x)))
+    return binning(xp.random.randint(
+        0, 2,
+        size=(
+            int(len(y) // binning_order),
+            int(len(x) // binning_order))),
+        binning_order)
 
 
 def gaussian_beam(x, y, A0, rho0):
@@ -45,8 +55,8 @@ def round_hole(x, y, R, x0=0, y0=0):
     return xp.array(field, dtype=xp.int8)
 
 
-def random_round_hole(x, y, R, x0=0, y0=0):
-    field = random_wave(x, y)
+def random_round_hole(x, y, R, x0=0, y0=0, binning_order=1):
+    field = random_wave(x, y, binning_order)
     field[round_hole(x, y, R, x0, y0) == 0] = 0
     return field
 

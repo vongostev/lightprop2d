@@ -13,6 +13,7 @@ import numpy as np
 from dataclasses import dataclass
 from scipy.interpolate import interp2d
 
+
 try:
     import cupy as cp
     _using_cupy = True
@@ -118,11 +119,11 @@ class Beam2D:
         self._construct_grids()
         # Initialize a field with the given function of array
         if self.init_field_gen is not None:
-            self.field = self._xp(
+            self.field = self._asxp(
                 self.init_field_gen(
                     self.X, self.Y, *self.init_gen_args)).astype(self.complex)
         elif self.init_field is not None:
-            self.field = self._xp(self.init_field).astype(self.complex)
+            self.field = self._asxp(self.init_field).astype(self.complex)
         else:
             raise ValueError(
                 "Init field data is None : " +
@@ -149,7 +150,7 @@ class Beam2D:
             return data.get()
         return data
 
-    def _xp(self, data):
+    def _asxp(self, data):
         """Convert cupy or numpy arrays to self.xp array.
 
         Parameters
@@ -172,7 +173,10 @@ class Beam2D:
         if not _using_cupy:
             return data
         if self.xp.__name__ == 'cupy':
-            return self.xp.array(data)
+            if type(data) == np.ndarray:
+                return self.xp.array(data)
+            if type(data) == cp.ndarray:
+                return data
         else:
             if type(data) == np.ndarray:
                 return data
@@ -240,7 +244,8 @@ class Beam2D:
         self.k0 = 1 / self.wl
         self.Kx = self._k_grid(self.dL, self.npoints)
         self.Ky = self.Kx.reshape((-1, 1))
-        self.Kz = self.xp.sqrt(self.k0**2 - self.Kx**2 - self.Ky**2)
+        self.Kz = self.xp.nan_to_num(self.xp.sqrt(
+            self.k0**2 - self.Kx**2 - self.Ky**2))
 
         k_cryt = self._np(self.xp.trunc(self.area_size / self.wl))
         if self.npoints / 2 > k_cryt and not self.unsafe_fft:
@@ -270,9 +275,12 @@ class Beam2D:
             For example see **lightprop2d.gaussian_beam**
         """
         if f_gen is not None:
+            assert isinstance(f_gen, object)
+            assert isinstance(fargs, (tuple, list))
             self.field *= f_gen(self.X, self.Y, *fargs)
         if f_init is not None:
-            self.field *= self._xp(f_init)
+            assert isinstance(f_init, (np.ndarray, self.xp.ndarray))
+            self.field *= self._asxp(f_init)
         self.spectrum = self._fft2(self.field)
 
     def spectral_filter(self, f_init=None, f_gen=None, fargs=()):
@@ -297,7 +305,7 @@ class Beam2D:
         if f_gen is not None:
             self.spectrum *= f_gen(self.Kx, self.Ky, *fargs)
         if f_init is not None:
-            self.spectrum *= self._xp(f_init)
+            self.spectrum *= self._asxp(f_init)
         self.field = self._ifft2(self.spectrum)
 
     def expand(self, area_size: float):
@@ -348,7 +356,7 @@ class Beam2D:
         self._construct_grids()
         X = self._np(self.X)
 
-        self.field = self._xp(fieldgen_real(X, X) + 1j * fieldgen_imag(X, X))
+        self.field = self._asxp(fieldgen_real(X, X) + 1j * fieldgen_imag(X, X))
         self.spectrum = self._fft2(self.field)
 
     def propagate(self, z: float):
@@ -420,7 +428,7 @@ class Beam2D:
         X *= scale_factor
 
         self.field = scale_factor * \
-            self._xp(fieldgen_real(X, X) + 1j * fieldgen_imag(X, X)) * \
+            self._asxp(fieldgen_real(X, X) + 1j * fieldgen_imag(X, X)) * \
             (self.xp.cos(phase) + 1j * self.xp.sin(phase))
         self.spectrum = self._fft2(self.field)
 
@@ -448,7 +456,7 @@ class Beam2D:
                 me[dN:Nt, dN:Nt] = m.reshape((Nb, Nb))
                 expanded_modes_list.append(me)
             return np.array(expanded_modes_list)
-        return np.array([m.reshape((Nb, Nb)) for m in modes_list])
+        return self.xp.array([m.reshape((Nb, Nb)) for m in modes_list])
 
     def deconstruct_by_modes(self, modes_list):
         r"""Return decomposed coefficients in given mode basis as a least-square solution.
@@ -474,14 +482,15 @@ class Beam2D:
         modes_list : self.xp.ndarray
             Modes coefficients.
         """
+        modes_array = self._asxp(modes_list)
         Nb = np.sqrt(len(modes_list[0])).astype(int)
         dN = (self.npoints - Nb) // 2
-        modes_matrix = np.vstack(modes_list).T
+        modes_matrix = self.xp.vstack(modes_array).T
         flatten_field = \
             self.field[dN:self.npoints - dN,
                        dN:self.npoints - dN].flatten()
         self.modes_coeffs = self.xp.linalg.lstsq(
-            self._xp(modes_matrix), flatten_field)[0]
+            modes_matrix, flatten_field, rcond=-1)[0]
         return self.modes_coeffs
 
     def fast_deconstruct_by_modes(self, modes_matrix_t,  modes_matrix_dot_t):
@@ -520,15 +529,15 @@ class Beam2D:
 
         .. math::\mathbf{C}=SOLVE(\mathbf{M}(r)^T\mathbf{M},A(r)) \equiv (\mathbf{M}(r)^T\mathbf{M})^{-1}A(r)
         """
-        modes_matrix_t = self._xp(modes_matrix_t)
-        modes_matrix_dot_t = self._xp(modes_matrix_dot_t)
+        modes_matrix_t = self._asxp(modes_matrix_t)
+        modes_matrix_dot_t = self._asxp(modes_matrix_dot_t)
         Nb = np.sqrt(modes_matrix_t.shape[1]).astype(int)
         dN = (self.npoints - Nb) // 2
         flatten_field = \
             self.field[dN:self.npoints - dN,
                        dN:self.npoints - dN].flatten()
-        self.modes_coeffs = self.xp.linalg.solve(
-            modes_matrix_dot_t, modes_matrix_t.dot(flatten_field))
+        self.modes_coeffs = self.xp.linalg.lstsq(
+            modes_matrix_dot_t, modes_matrix_t.dot(flatten_field), rcond=-1)[0]
         return self.modes_coeffs
 
     def construct_by_modes(self, modes_list, modes_coeffs):
@@ -596,7 +605,7 @@ class Beam2D:
         iprofile : self.xp.ndarray
             Intensity profile of the field A
         """
-        return self.xp.abs(self.field) ** 2
+        return self._np(self.xp.abs(self.field) ** 2)
 
     @property
     def phiprofile(self):
@@ -609,7 +618,7 @@ class Beam2D:
         iprofile : self.xp.ndarray
             Phase profile of the field A
         """
-        return self.xp.angle(self.field)
+        return self._np(self.xp.angle(self.field))
 
     @property
     def centroid_intensity(self):
@@ -626,5 +635,6 @@ class Beam2D:
         return self.iprofile[nyc, nxc]
 
     def __repr__(self):
-        return (f"Beam {self.npoints:d}x{self.npoints:d} points {self.area_size:.3g}x{self.area_size:.3g} cm " +
-                f"<wl={self.wl / nm:.3g} nm, z={self.z:.3g} cm>")
+        return (f"Beam {self.npoints:d}x{self.npoints:d} points" +
+                f"\n\t{self.area_size:.3g}x{self.area_size:.3g} cm " +
+                f"\n\t<wl={self.wl / nm:.3g} nm, z={self.z:.3g} cm>")
