@@ -6,10 +6,19 @@ Created on Wed Jun 23 18:47:39 2021
 """
 import __init__
 import numpy as np
-import cupy as cp
-
+import sys
 from lightprop2d.profiles import *
+from logging import Logger, StreamHandler, Formatter
 
+
+log = Logger('test.profiles')
+
+handler = StreamHandler(sys.stdout)
+handler.setLevel(10)
+formatter = Formatter(
+    "%(asctime)s - %(name)-10s [%(levelname)-7.7s]  %(message)s")
+handler.setFormatter(formatter)
+log.addHandler(handler)
 
 def _tprofiles(xp, npoints=256, dL=1e-4):
     x = xp.arange(-npoints // 2, npoints // 2, 1) * dL
@@ -25,17 +34,20 @@ def _tprofiles(xp, npoints=256, dL=1e-4):
     round_hole(x, y, R)
     random_round_hole(x, y, R)
     assert xp.allclose(square_hole(x, y, d), rectangle_hole(x, y, dx, dy))
-    square_slits(x, y, d, d)
-
-
-def test_numpy():
-    return _tprofiles(np)
-
-
-def test_cupy():
-    return _tprofiles(cp)
+    assert xp.allclose(square_slits(x, y, d, d),
+                       square_hole(x, y, d, x0=-d/2) + square_hole(x, y, d, x0=d/2))
 
 
 if __name__ == "__main__":
-    test_cupy()
-    test_numpy()
+    try:
+        import cupy as cp
+        _tprofiles(cp)
+        log.info('Cupy tested')
+    except Exception as E:
+        log.error(f'Cupy test error: {E}')
+    try:
+        import numpy as np
+        _tprofiles(np)
+        log.info('Numpy tested')
+    except Exception as E:
+        log.error(f'Numpy test error: {E}')

@@ -28,7 +28,7 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 |     xp | object = np |         Backend module. numpy (np) or cupy (cp). Controlled by 'use_gpu' key | 
 |     init_field | xp.ndarray = None |         Initial field distribution given as an array | 
 |     init_field_gen | object = None |         Initial field distribution given as a generating function | 
-|     init_gen_args | tuple = () |         Additional arguments of 'init_field_gen' excluding         the first two (X grid and Y grid) | 
+|     init_gen_args | tuple = () |         Additional arguments of 'init_field_gen' excluding        the first two (X grid and Y grid) | 
 |     complex_bits | int = 128 |         Precision of complex numbers. Can be 64 or 128 | 
 |     use_gpu | bool = False |         Backend choice.        If True, the class uses cupy backend with GPU support.        If False, the class uses numpy backend | 
 |     unsafe_fft | bool = False |         Check physical correctness of spectrum calculations            'Critical K⟂  must be bigger than self.npoints // 2'.        If True, this check is disabled | 
@@ -42,7 +42,7 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 | method    | Doc             |
 |:-------|:----------------|
 | _np | Convert cupy or numpy arrays to numpy array. | 
-| _xp | Convert cupy or numpy arrays to self.xp array. | 
+| _asxp | Convert cupy or numpy arrays to self.xp array. | 
 | _k_grid | Return a grid for Kx or Ky values. | 
 | _fft2 | 2D FFT alias with a choice of the fft module. | 
 | _ifft2 | 2D Inverse FFT alias with a choice of the fft module. | 
@@ -51,7 +51,8 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 | spectral_filter | Apply a mask to the field spectrum. | 
 | expand | Expand the beam calculation area to the given area_size. | 
 | crop | Crop the field to the new area_size smaller than actual. | 
-| propagate | A field propagation with Fourier transformation. | 
+| coarse | Decrease `self.npoints` with a divider `mean_order`. | 
+| propagate | A field propagation with Fourier transformation to the distance `z`. | 
 | lens | Lens representated as a phase multiplicator. | 
 | lens_image | Image transmitting through the lens between optically conjugated planes. | 
 | _expand_basis | Expand modes basis to the self.npoints. | 
@@ -85,10 +86,10 @@ Convert cupy or numpy arrays to numpy array.
 |         data | numpy.ndarray |             Converted data. | 
 
 
-### _xp
+### _asxp
 
 ``` python 
-    _xp(data) 
+    _asxp(data) 
 ```
 
 
@@ -226,6 +227,9 @@ Apply a mask to the field spectrum.
 
 Expand the beam calculation area to the given area_size.
 
+with proportional `self.npoints` increasing.
+`self.dL` remains constant.
+
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
 |         area_size | float |             Wanted area size in centimetres. | 
@@ -240,10 +244,35 @@ Expand the beam calculation area to the given area_size.
 
 Crop the field to the new area_size smaller than actual.
 
+with proportional `self.npoints` decreasing.
+`self.dL` remains constant.
+
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
 |         area_size | float |             A size of the calculation area in centimetres. | 
 |         npoints | int, optional |             A number of points in one dimention.            The default is 0 -- number of points isn't changed. | 
+
+
+### coarse
+
+``` python 
+    coarse(mean_order: int = 1) 
+```
+
+
+Decrease `self.npoints` with a divider `mean_order`.
+
+Block average applies to `self.field` with size of blocks as `mean_order*mean_order`.
+`self.spectrum` is calculated from the averaged `self.field`.
+It is necessary to decrease numerical complexity when propagation
+distance is huge and the beam radius grows dramatically.
+Recommended to use it after `self.expand`. For example
+>>> beam.expand(self.area_size * 2)
+>>> beam.coarse(2)
+
+| Parameters    | Type             | Doc             |
+|:-------|:-----------------|:----------------|
+|         mean_order | int, optional |             Mean block size. The default is 1. | 
 
 
 ### propagate
@@ -253,7 +282,7 @@ Crop the field to the new area_size smaller than actual.
 ```
 
 
-A field propagation with Fourier transformation.
+A field propagation with Fourier transformation to the distance `z`.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|

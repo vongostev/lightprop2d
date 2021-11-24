@@ -9,10 +9,10 @@ from scipy.special import fresnel
 import matplotlib.pyplot as plt
 
 from lightprop2d import round_hole, square_hole
-from lightprop2d import Beam2DGPU as Beam2D
+from lightprop2d import Beam2D
 
 # XY grid dimensions
-npoints = 1024
+npoints = 512
 # All input data are in cm
 # XY grid widening
 area_size = 2e-1
@@ -26,24 +26,23 @@ wl0 = 532e-7
 R = 0.01
 
 beam = Beam2D(area_size, npoints, wl0, init_field_gen=round_hole,
-              init_gen_args=(R,))
+              init_gen_args=(R,), use_gpu=1)
 
 # Z grid for a propagation
 dz = 0.02
-z_grid = np.arange(14, 200) * dz
+z_grid = np.arange(14, 100) * dz
 intensities = []
 
 beam.propagate(z_grid[0])
 for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)
-    intensities.append(beam.central_intensity)
+    intensities.append(beam.centroid_intensity)
 
 z_normalized = z_grid * beam.wl * 2 / R ** 2
-plt.plot(z_normalized, np.array(intensities) /
-          (3e10 / 8 / np.pi), label='Calc')
+plt.plot(z_normalized, intensities, label='Calc')
 plt.plot(z_normalized, 4 * np.sin(np.pi / z_normalized) ** 2,
-          '--', label='Theory')
+         '--', label='Theory')
 plt.axhline(4, linestyle=':')
 plt.xlabel(r'$2\lambda z/R^2$')
 plt.ylabel(r'$\frac{I_0(z)}{I_0(0)}$' + '\t   ', rotation=0, fontsize=14)
@@ -56,12 +55,12 @@ plt.show()
 Дифракция на квадратном отверстии
 """
 # XY grid dimensions
-# npoints = 256
+npoints = 512
 # All input data are in cm
 # XY grid widening
 area_size = 2e-1
 # Wavelength in cm
-wl0 = 532e-7
+wl0 = 632e-7
 # Square hole width
 d = 0.02
 
@@ -85,15 +84,14 @@ beam.propagate(z_grid[0])
 for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)
-    intensities.append(beam.central_intensity)
+    intensities.append(beam.iprofile[npoints // 2, npoints // 2])
 
 z_normalized = z_grid * beam.wl * 2 / d ** 2
-plt.plot(z_normalized, np.array(intensities) /
-          (3e10 / 8 / np.pi), label='Calc')
+plt.plot(z_normalized, intensities, label='Calc')
 plt.plot(z_normalized,
-          0.25 * lfunc_sqr(- np.sqrt(1 / z_normalized),
+         0.25 * lfunc_sqr(- np.sqrt(1 / z_normalized),
                           np.sqrt(1 / z_normalized)) ** 2,
-          '--', label='Theory')
+         '--', label='Theory')
 plt.xlabel(r'$2\lambda z/d^2$')
 plt.ylabel(r'$\frac{I_0(z)}{I_0(0)}$' + '\t   ', rotation=0, fontsize=14)
 plt.legend(frameon=False)

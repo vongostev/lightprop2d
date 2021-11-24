@@ -10,9 +10,9 @@ try:
 except ImportError:
     print("ImportError: CuPy didn't find, 'use_gpu' key is meaningless.")
 
-__all__ = ('plane_wave', 'random_wave', 'gaussian_beam',
-           'round_hole', 'random_round_hole',
-           'rectangle_hole', 'square_hole',
+__all__ = ('plane_wave', 'random_wave', 'random_wave_bin', 'gaussian_beam',
+           'round_hole', 'random_round_hole', 'random_round_hole_bin',
+           'random_round_hole_phase', 'rectangle_hole', 'square_hole',
            'square_slits')
 
 
@@ -33,10 +33,19 @@ def plane_wave(x, y):
     return xp.ones((len(y), len(x)))
 
 
-def random_wave(x, y, binning_order=1):
+def random_wave_bin(x, y, binning_order=1):
     xp = _get_array_module(x)
     return binning(xp.random.randint(
         0, 2,
+        size=(
+            int(len(y) // binning_order),
+            int(len(x) // binning_order))),
+        binning_order)
+
+
+def random_wave(x, y, binning_order=1):
+    xp = _get_array_module(x)
+    return binning(xp.random.random(
         size=(
             int(len(y) // binning_order),
             int(len(x) // binning_order))),
@@ -55,9 +64,23 @@ def round_hole(x, y, R, x0=0, y0=0):
     return xp.array(field, dtype=xp.int8)
 
 
+def random_round_hole_bin(x, y, R, x0=0, y0=0, binning_order=1):
+    field = random_wave_bin(x, y, binning_order)
+    field[round_hole(x, y, R, x0, y0) == 0] = 0
+    return field
+
+
 def random_round_hole(x, y, R, x0=0, y0=0, binning_order=1):
     field = random_wave(x, y, binning_order)
     field[round_hole(x, y, R, x0, y0) == 0] = 0
+    return field
+
+
+def random_round_hole_phase(x, y, R, x0=0, y0=0, binning_order=1):
+    xp = _get_array_module(x)
+    angle = random_round_hole(x, y, R, x0, y0, binning_order) * 2 * np.pi
+    phase = xp.cos(angle) + 1j * xp.sin(angle)
+    field = round_hole(x, y, R, x0, y0) * phase
     return field
 
 

@@ -66,7 +66,7 @@ class Beam2D:
     init_field_gen : object = None
         Initial field distribution given as a generating function
     init_gen_args : tuple = ()
-        Additional arguments of 'init_field_gen' excluding 
+        Additional arguments of 'init_field_gen' excluding
         the first two (X grid and Y grid)
     complex_bits : int = 128
         Precision of complex numbers. Can be 64 or 128
@@ -309,7 +309,9 @@ class Beam2D:
         self.field = self._ifft2(self.spectrum)
 
     def expand(self, area_size: float):
-        """Expand the beam calculation area to the given area_size.
+        r"""Expand the beam calculation area to the given area_size.
+        with proportional `self.npoints` increasing.
+        `self.dL` remains constant.
 
         Parameters
         ----------
@@ -317,20 +319,30 @@ class Beam2D:
             Wanted area size in centimetres.
         """
         old_npoints = self.npoints
-        self.npoints *= int(area_size / self.area_size)
+        self.npoints = int(self.npoints * area_size / self.area_size)
+        self.npoints -= self.npoints % 2
         self.area_size = area_size
         d_npoints = (self.npoints - old_npoints) // 2
         self._construct_grids()
-
-        xyprofile = self.xp.zeros([self.npoints]*2)
-        xyprofile[d_npoints:-d_npoints,
-                  d_npoints:-d_npoints] = self.field
-        self.field = xyprofile
-        del xyprofile
+        # Remove step to zero on the bounds of image
+        _f = self.xp.hstack((
+            self.xp.repeat(self.field[:, 0].reshape(
+                (-1, 1)), d_npoints, axis=1),
+            self.field,
+            self.xp.repeat(self.field[:, -1].reshape(
+                (-1, 1)), d_npoints, axis=1)))
+        _f = self.xp.vstack((
+            self.xp.repeat(_f[0].reshape((1, -1)), d_npoints, axis=0),
+            _f,
+            self.xp.repeat(_f[-1].reshape((1, -1)), d_npoints, axis=0)))
+        self.field = _f
+        del _f
         self.spectrum = self._fft2(self.field)
 
     def crop(self, area_size: float, npoints: int = 0):
-        """Crop the field to the new area_size smaller than actual.
+        r"""Crop the field to the new area_size smaller than actual.
+        with proportional `self.npoints` decreasing.
+        `self.dL` remains constant.
 
         Parameters
         ----------
@@ -339,7 +351,6 @@ class Beam2D:
         npoints : int, optional
             A number of points in one dimention.
             The default is 0 -- number of points isn't changed.
-
         """
         old_X = self.X[self.xp.abs(self.X) < area_size / 2]
         Nc = self.npoints // 2
@@ -359,8 +370,33 @@ class Beam2D:
         self.field = self._asxp(fieldgen_real(X, X) + 1j * fieldgen_imag(X, X))
         self.spectrum = self._fft2(self.field)
 
+    def coarse(self, mean_order: int = 1):
+        r"""Decrease `self.npoints` with a divider `mean_order`.
+        Block average applies to `self.field` with size of blocks as `mean_order*mean_order`.
+        `self.spectrum` is calculated from the averaged `self.field`.
+        It is necessary to decrease numerical complexity when propagation
+        distance is huge and the beam radius grows dramatically.
+
+        Recommended to use it after `self.expand`. For example
+
+        >>> beam.expand(self.area_size * 2)
+        >>> beam.coarse(2)
+
+        Parameters
+        ----------
+        mean_order : int, optional
+            Mean block size. The default is 1.
+        """
+        self.npoints //= mean_order
+        self._construct_grids()
+        self.field = \
+            self.field.reshape(
+                (self.npoints, mean_order, self.npoints, mean_order)
+            ).mean((1, 3))
+        self.spectrum = self._fft2(self.field)
+
     def propagate(self, z: float):
-        r"""A field propagation with Fourier transformation.
+        r"""A field propagation with Fourier transformation to the distance `z`.
 
         Parameters
         ----------
