@@ -44,11 +44,9 @@ def test_gaussian(R, tol):
     intensities = []
 
     beam.propagate(z_grid[0])
-    # beam.lens(2)
     for z in z_grid:
-        if z > z_grid[0]:
-            beam.propagate(dz)
         intensities.append(beam.centroid_intensity)
+        beam.propagate(dz)
 
     z_normalized = z_grid / 2 / np.pi / beam.k0 / R ** 2
     assert np.allclose(np.array(intensities), 1 /
@@ -61,14 +59,13 @@ def test_round(R, tol):
 
     # Z grid for a propagation
     # dz = 0.02
-    z_grid = np.arange(14, 100) * dz
+    z_grid = np.arange(20, 100) * dz
     intensities = []
 
     beam.propagate(z_grid[0])
     for z in z_grid:
-        if z > z_grid[0]:
-            beam.propagate(dz)
         intensities.append(beam.centroid_intensity)
+        beam.propagate(dz)
 
     z_normalized = z_grid * beam.wl * 2 / R ** 2
     assert np.allclose(np.array(intensities), 4 *
