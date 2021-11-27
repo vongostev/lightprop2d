@@ -410,8 +410,8 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 
 Return decomposed coefficients in given mode basis as a least-square solution. Fast version.
 
-Fast version with pre-computations 
-Results can be a little different from `deconstruct_by_modes` ones 
+Fast version with pre-computations
+Results can be a little different from `deconstruct_by_modes` ones
 because of full set of singular values is used.
 
 | Parameters    | Type             | Doc             |

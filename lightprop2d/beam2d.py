@@ -100,8 +100,9 @@ class Beam2D:
         Raises
         ------
         ValueError
-            Init field data is None:
-                'init_field_gen' must be a function or 'init_field' must be an array.
+
+        Init field data is None:
+            'init_field_gen' must be a function or 'init_field' must be an array.
 
         """
 
@@ -532,8 +533,8 @@ class Beam2D:
     def fast_deconstruct_by_modes(self, modes_matrix_t,  modes_matrix_dot_t):
         r"""Return decomposed coefficients in given mode basis as a least-square solution. Fast version.
 
-        Fast version with pre-computations 
-        Results can be a little different from `deconstruct_by_modes` ones 
+        Fast version with pre-computations
+        Results can be a little different from `deconstruct_by_modes` ones
         because of full set of singular values is used.
 
         Parameters
