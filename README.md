@@ -49,3 +49,7 @@ beam.propagate(100*um)
 plt.imshow(beam.iprofile)
 plt.show()
 ```
+
+### Funding
+This work is supported by the Russian Science
+Foundation under grant No. 21-12-00155.
