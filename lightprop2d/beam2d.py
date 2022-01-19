@@ -415,6 +415,9 @@ class Beam2D:
 
         :math:`k_z` must be greater than :math:`\max(k_x),\max(k_y)`
         """
+        if z == 0:
+            return
+
         self.z += z * 1.
         _deltak = self.Kz * z
         # clip to interval [-2pi, 0]

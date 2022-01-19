@@ -52,8 +52,10 @@ def random_wave(x, y, binning_order=1):
         binning_order)
 
 
-def gaussian_beam(x, y, A0, rho0):
+def gaussian_beam(x, y, A0, rho0, x0=0, y0=0):
     xp = _get_array_module(x)
+    x -= x0
+    y -= y0
     return A0 * xp.exp(- (x ** 2 + y ** 2) / 2 / rho0 ** 2)
 
 
