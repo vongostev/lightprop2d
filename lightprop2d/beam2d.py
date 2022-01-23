@@ -87,6 +87,7 @@ class Beam2D:
     z: float = 0.
     xp: object = np
     init_field: xp.ndarray = None
+    init_spectrum: xp.ndarray = None
     init_field_gen: object = None
     init_gen_args: tuple = ()
     complex_bits: int = 128
@@ -122,15 +123,19 @@ class Beam2D:
         if self.init_field_gen is not None:
             self.field = self._asxp(
                 self.init_field_gen(
-                    self.X, self.Y, *self.init_gen_args)).astype(self.complex)
+                    self.X, self.Y, *self.init_gen_args))
         elif self.init_field is not None:
-            self.field = self._asxp(self.init_field).astype(self.complex)
+            self.field = self._asxp(self.init_field)
         else:
             raise ValueError(
                 "Init field data is None : " +
                 "'init_field_gen' must be a function or 'init_field' must be an array.")
-
-        self.spectrum = self._fft2(self.field)
+        if self.field.dtype != self.complex:
+            self.field = self.field.astype(self.complex)
+        if self.init_spectrum is None:
+            self.spectrum = self._fft2(self.field)
+        else:
+            self.spectrum = self.init_spectrum
 
     def _np(self, data):
         """Convert cupy or numpy arrays to numpy array.
@@ -418,7 +423,7 @@ class Beam2D:
         if z == 0:
             return
 
-        self.z += z * 1.
+        self.z += z 
         _deltak = self.Kz * z
         # clip to interval [-2pi, 0]
         phase = 2 * self.xp.pi * (self.xp.trunc(_deltak) - _deltak)
@@ -624,13 +629,12 @@ class Beam2D:
             Diameter of the beam by x and y axes.
         """
         n = self.npoints // 2
-        Y, X = self.xp.mgrid[-n:n, -n:n] * self.dL
         I = self.iprofile
-        I[I < self.xp.max(I) / self.xp.exp(4)] = 0
+        Y, X = self.xp.mgrid[-n:n, -n:n] * self.dL
         Xc, Yc, _, _ = self.centroid
 
         def sigma(x, xc): return self.xp.sqrt(
-            self.xp.average((x-xc)*(x-xc), weights=I))
+            self.xp.average((x-xc) ** 2, weights=I))
 
         return 4 * sigma(X, Xc), 4 * sigma(Y, Yc)
 

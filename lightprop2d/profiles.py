@@ -56,7 +56,7 @@ def gaussian_beam(x, y, A0, rho0, x0=0, y0=0):
     xp = _get_array_module(x)
     x -= x0
     y -= y0
-    return A0 * xp.exp(- (x ** 2 + y ** 2) / 2 / rho0 ** 2)
+    return A0 * xp.exp(- (x ** 2 + y ** 2) / rho0 ** 2)
 
 
 def round_hole(x, y, R, x0=0, y0=0):
