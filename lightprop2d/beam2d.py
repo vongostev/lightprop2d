@@ -94,6 +94,7 @@ class Beam2D:
 
     use_gpu: bool = False
     unsafe_fft: bool = False
+    numpy_output: bool = True
 
     def __post_init__(self):
         """Post-init parameters processing
@@ -423,7 +424,7 @@ class Beam2D:
         if z == 0:
             return
 
-        self.z += z 
+        self.z += z
         _deltak = self.Kz * z
         # clip to interval [-2pi, 0]
         phase = 2 * self.xp.pi * (self.xp.trunc(_deltak) - _deltak)
@@ -634,7 +635,7 @@ class Beam2D:
         Xc, Yc, _, _ = self.centroid
 
         def sigma(x, xc): return self.xp.sqrt(
-            self.xp.average((x-xc) ** 2, weights=I))
+            self.xp.average((x-xc) ** 2, weights=I)).tolist()
 
         return 4 * sigma(X, Xc), 4 * sigma(Y, Yc)
 
@@ -649,7 +650,11 @@ class Beam2D:
         iprofile : self.xp.ndarray
             Intensity profile of the field A
         """
-        return self._np(self.xp.abs(self.field) ** 2)
+        profile = self.xp.abs(self.field) ** 2
+        if self.numpy_output:
+            return self._np(profile)
+        else:
+            return profile
 
     @property
     def phiprofile(self):
@@ -662,7 +667,11 @@ class Beam2D:
         iprofile : self.xp.ndarray
             Phase profile of the field A
         """
-        return self._np(self.xp.angle(self.field))
+        profile = self.xp.angle(self.field)
+        if self.numpy_output:
+            return self._np(profile)
+        else:
+            return profile
 
     @property
     def centroid_intensity(self):
@@ -676,7 +685,7 @@ class Beam2D:
             The light intensity value in the centroid coordinates.
         """
         _, _, nxc, nyc = self.centroid
-        return self.iprofile[nyc, nxc]
+        return self.iprofile[nyc, nxc].tolist()
 
     def __repr__(self):
         return (f"Beam {self.npoints:d}x{self.npoints:d} points" +

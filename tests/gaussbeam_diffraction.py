@@ -46,7 +46,7 @@ for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)
     intensities.append(beam.centroid_intensity)
-    widths.append(beam.D4sigma[0].get() / 2)
+    widths.append(beam.D4sigma[0] / 2)
     phases.append(beam.phiprofile[beam.centroid[2:]])
 
 z_normalized = 2 * z_grid / (2 * np.pi * beam.k0 * R ** 2)  # Formula 14.42
