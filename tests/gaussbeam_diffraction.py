@@ -16,7 +16,7 @@ from lightprop2d import gaussian_beam, plane_wave
 from lightprop2d import Beam2D, cm, mm, um
 
 # XY grid dimensions
-npoints = 256
+npoints = 512
 # All input data are in cm
 # XY grid widening
 area_size = 2 * mm
@@ -41,7 +41,6 @@ widths = []
 phases = []
 
 beam.propagate(z_grid[0])
-# beam.lens(2)
 for z in z_grid:
     if z > z_grid[0]:
         beam.propagate(dz)

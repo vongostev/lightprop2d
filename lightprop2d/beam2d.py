@@ -254,10 +254,10 @@ class Beam2D:
         self.Kz = self.xp.nan_to_num(self.xp.sqrt(
             self.k0**2 - self.Kx**2 - self.Ky**2))
 
-        k_cryt = self._np(self.xp.trunc(self.area_size / self.wl))
-        if self.npoints / 2 > k_cryt and not self.unsafe_fft:
-            raise ValueError(
-                f"Critical K⟂ {k_cryt:g} must be bigger than {self.npoints // 2}")
+        # k_cryt = self._np(self.xp.trunc(self.area_size / self.wl))
+        # if self.npoints / 2 > k_cryt and not self.unsafe_fft:
+        #     raise ValueError(
+        #         f"Critical K⟂ {k_cryt:g} must be bigger than {self.npoints // 2}")
 
     def coordinate_filter(self, f_init=None, f_gen=None, fargs=()):
         """Apply a mask to the field profile.
