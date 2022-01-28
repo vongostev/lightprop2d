@@ -234,6 +234,13 @@ class Beam2D:
             return ifft2(data, **_fftargs)
         return self.xp.fft.ifft2(data)
 
+    def _update_obj(self, field, spectrum=None):
+        self.field = self._asxp(field)
+        if spectrum is None:
+            self.spectrum = self._fft2(self.field)
+        else:
+            self.spectrum = self._asxp(spectrum)
+
     def _construct_grids(self):
         """Construction of X, Y, Kx, Ky grids.
 
