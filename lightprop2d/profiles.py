@@ -63,7 +63,7 @@ def round_hole(x, y, R, x0=0, y0=0):
     xp = _get_array_module(x)
     d = gaussian_beam(x - x0, y - y0, 1, R)
     field = d >= 1 / xp.exp(0.5)
-    return xp.array(field, dtype=xp.int8)
+    return field
 
 
 def random_round_hole_bin(x, y, R, x0=0, y0=0, binning_order=1):
