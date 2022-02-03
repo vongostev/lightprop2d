@@ -9,8 +9,8 @@ JOSA A, 15(4), 857-867.
 
 # Beam2D 
 
-``` python 
- class Beam2D 
+```python
+class Beam2D
 ```
 
 Electromagnetic field propagation using spectral method.
@@ -31,7 +31,6 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 |     init_gen_args | tuple = () |         Additional arguments of 'init_field_gen' excluding        the first two (X grid and Y grid) | 
 |     complex_bits | int = 128 |         Precision of complex numbers. Can be 64 or 128 | 
 |     use_gpu | bool = False |         Backend choice.        If True, the class uses cupy backend with GPU support.        If False, the class uses numpy backend | 
-|     unsafe_fft | bool = False |         Check physical correctness of spectrum calculations            'Critical K⟂  must be bigger than self.npoints // 2'.        If True, this check is disabled | 
 
 
 --------- 
@@ -46,6 +45,7 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 | _k_grid | Return a grid for Kx or Ky values. | 
 | _fft2 | 2D FFT alias with a choice of the fft module. | 
 | _ifft2 | 2D Inverse FFT alias with a choice of the fft module. | 
+| _update_obj | Fast updating of the beam field and spectrum. | 
 | _construct_grids | Construction of X, Y, Kx, Ky grids. | 
 | coordinate_filter | Apply a mask to the field profile. | 
 | spectral_filter | Apply a mask to the field spectrum. | 
@@ -69,8 +69,8 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 
 ### _np
 
-``` python 
-    _np(data) 
+```python
+   _np(data)
 ```
 
 
@@ -88,8 +88,8 @@ Convert cupy or numpy arrays to numpy array.
 
 ### _asxp
 
-``` python 
-    _asxp(data) 
+```python
+   _asxp(data)
 ```
 
 
@@ -107,8 +107,8 @@ Convert cupy or numpy arrays to self.xp array.
 
 ### _k_grid
 
-``` python 
-    _k_grid(dL: float, npoints: int) 
+```python
+   _k_grid(dL: float, npoints: int)
 ```
 
 
@@ -127,8 +127,8 @@ Return a grid for Kx or Ky values.
 
 ### _fft2
 
-``` python 
-    _fft2(data) 
+```python
+   _fft2(data)
 ```
 
 
@@ -141,8 +141,8 @@ Return a grid for Kx or Ky values.
 
 ### _ifft2
 
-``` python 
-    _ifft2(data) 
+```python
+   _ifft2(data)
 ```
 
 
@@ -150,13 +150,60 @@ Return a grid for Kx or Ky values.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         data | self.xp.ndarray |             2d signal data with type of self.complex. | 
+|         data | Tuple[numpy.ndarray, cupy.ndarray] |             2d signal data with type of self.complex. | 
+
+
+### _update_obj
+
+```python
+   _update_obj(field, spectrum=None)
+```
+
+
+Fast updating of the beam field and spectrum.
+
+Very important for the sequential calculations.
+For example, with CPU:
+```python
+>>> %timeit b = Beam2D(200, 1024, 0.632, init_field_gen=gaussian_beam, init_gen_args=(1, 50))
+81 ms ± 527 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+>>> %timeit a = Beam2D(200, 1024, 0.632, init_field=b.field)
+55.8 ms ± 2.15 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+>>> %timeit a._update_obj(b.field)
+36.4 ms ± 140 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+>>> %timeit a = Beam2D(200, 1024, 0.632, init_field=b.field, init_spectrum=b.spectrum)
+17.2 ms ± 211 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+>>> %timeit a._update_obj(b.field, spectrum=b.spectrum)
+1.12 µs ± 47.8 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+```
+And with GPU:
+```python
+>>> %timeit b = Beam2D(200, 1024, 0.632, init_field_gen=gaussian_beam, init_gen_args=(1, 50), use_gpu=True)
+2.75 ms ± 16.3 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+>>> %timeit a = Beam2D(200, 1024, 0.632, init_field=b.field, use_gpu=True)
+2.16 ms ± 63.2 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+>>> %timeit -n10 a._update_obj(b.field)
+66.6 µs ± 23.1 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+>>> a = Beam2D(200, 1024, 0.632, init_field=b.field, init_spectrum=b.spectrum, use_gpu=True)
+1.1 ms ± 44.2 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+>>> %timeit -n10000 a._update_obj(b.field, spectrum=b.spectrum)
+1.39 µs ± 24 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+```
+
+| Parameters    | Type             | Doc             |
+|:-------|:-----------------|:----------------|
+|         field | Tuple[numpy.ndarray, cupy.ndarray] |             Field distribuion of complex type. | 
+|         spectrum | Tuple[numpy.ndarray, cupy.ndarray], optional |             Field spatial spectrum of complex type. The default is None. | 
+
+
+| Returns    | Type             | Doc             |
+|:-------|:-----------------|:----------------|
 
 
 ### _construct_grids
 
-``` python 
-    _construct_grids() 
+```python
+   _construct_grids()
 ```
 
 
@@ -164,8 +211,8 @@ Construction of X, Y, Kx, Ky grids.
 
 ### coordinate_filter
 
-``` python 
-    coordinate_filter(f_init=None, f_gen=None, fargs=()) 
+```python
+   coordinate_filter(f_init=None, f_gen=None, fargs=())
 ```
 
 
@@ -173,7 +220,7 @@ Apply a mask to the field profile.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         f_init | numpy.ndarray, cupy.ndarray, optional |             A mask as an array. The default is None. | 
+|         f_init | Tuple[numpy.ndarray, cupy.ndarray], optional |             A mask as an array. The default is None. | 
 |         f_gen | function, optional |             A function to generate a mask. The default is None. | 
 |         fargs | tuple, optional |             Additional arguments of f_gen function. The default is (). | 
 
@@ -182,20 +229,20 @@ Apply a mask to the field profile.
 
 #### Notes
 
-The mask function `f_gen` can be user defined and must be in form
+The mask function `f_gen` can be user defined and must be in form:
 
-``` python 
-             >>> func(X, Y, *fargs)
- 
+
+```python
+    >>> func(X, Y, *fargs)
 ```
 
 
-Where X, Y are 1D grids
+Where X, Y are 1D grids:
 
-``` python 
-             >>> X = arange(-npoints // 2, npoints // 2, 1) * dL
-            >>> Y = X.reshape((-1, 1))
- 
+
+```python
+    >>> X = arange(-npoints // 2, npoints // 2, 1) * dL
+    >>> Y = X.reshape((-1, 1))
 ```
 
 
@@ -204,8 +251,8 @@ For example see **lightprop2d.gaussian_beam**
 
 ### spectral_filter
 
-``` python 
-    spectral_filter(f_init=None, f_gen=None, fargs=()) 
+```python
+   spectral_filter(f_init=None, f_gen=None, fargs=())
 ```
 
 
@@ -213,15 +260,15 @@ Apply a mask to the field spectrum.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         f_init | numpy.ndarray, cupy.ndarray, optional |             A mask as an array. The default is None. | 
-|         f_gen | function, optional |             A function to generate a mask. The default is None.            The mask function can be user defined and must be in form                >>> func(Kx, Ky, *fargs)            Where Kx, Ky are 1D grids                >>> Kx = fftfreq(npoints, d=dL)                >>> Ky = Kx.reshape((-1, 1)) | 
+|         f_init | Tuple[numpy.ndarray, cupy.ndarray], optional |             A mask as an array. The default is None. | 
+|         f_gen | function, optional |             A function to generate a mask. The default is None.            The mask function can be user defined and must be in form            >>> func(Kx, Ky, *fargs)            Where Kx, Ky are 1D grids            >>> Kx = fftfreq(npoints, d=dL)            >>> Ky = Kx.reshape((-1, 1)) | 
 |         fargs | tuple, optional |             Additional arguments of f_gen function. The default is (). | 
 
 
 ### expand
 
-``` python 
-    expand(area_size: float) 
+```python
+   expand(area_size: float)
 ```
 
 
@@ -237,8 +284,8 @@ with proportional `self.npoints` increasing.
 
 ### crop
 
-``` python 
-    crop(area_size: float, npoints: int = 0) 
+```python
+   crop(area_size: float, npoints: int = 0)
 ```
 
 
@@ -255,8 +302,8 @@ with proportional `self.npoints` decreasing.
 
 ### coarse
 
-``` python 
-    coarse(mean_order: int = 1) 
+```python
+   coarse(mean_order: int = 1)
 ```
 
 
@@ -267,8 +314,10 @@ Block average applies to `self.field` with size of blocks as `mean_order*mean_or
 It is necessary to decrease numerical complexity when propagation
 distance is huge and the beam radius grows dramatically.
 Recommended to use it after `self.expand`. For example
+```python
 >>> beam.expand(self.area_size * 2)
 >>> beam.coarse(2)
+```
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
@@ -277,8 +326,8 @@ Recommended to use it after `self.expand`. For example
 
 ### propagate
 
-``` python 
-    propagate(z: float) 
+```python
+   propagate(z: float)
 ```
 
 
@@ -300,9 +349,8 @@ With field as <img src="https://render.githubusercontent.com/render/math?math=A"
 In discrete way we can describe it with FFT:
 
 
-``` python 
-         >>> A(z) = iFFT(FFT(A(0)) * exp(- i*kz*z))
- 
+```python
+    >>> A(z) = iFFT(FFT(A(0)) * exp(- i*kz*z))
 ```
 
 
@@ -311,8 +359,8 @@ In discrete way we can describe it with FFT:
 
 ### lens
 
-``` python 
-    lens(f: float) 
+```python
+   lens(f: float)
 ```
 
 
@@ -338,8 +386,8 @@ Here <img src="https://render.githubusercontent.com/render/math?math=A(r)"> is a
 
 ### lens_image
 
-``` python 
-    lens_image(f: float, l1: float, l2: float) 
+```python
+   lens_image(f: float, l1: float, l2: float)
 ```
 
 
@@ -354,8 +402,8 @@ Image transmitting through the lens between optically conjugated planes.
 
 ### _expand_basis
 
-``` python 
-    _expand_basis(modes_list) 
+```python
+   _expand_basis(modes_list)
 ```
 
 
@@ -363,18 +411,18 @@ Expand modes basis to the self.npoints.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_list | Tuple[numpy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
+|         modes_list | Tuple[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
 
 
 | Returns    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_list | numpy.ndarray |             List of flattened modes. Unified with pyMMF. | 
+|         modes_list | self.xp.ndarray |             List of flattened modes. Unified with pyMMF. | 
 
 
 ### deconstruct_by_modes
 
-``` python 
-    deconstruct_by_modes(modes_list) 
+```python
+   deconstruct_by_modes(modes_list)
 ```
 
 
@@ -393,7 +441,7 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_list | Tuple[numpy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
+|         modes_list | Tuple[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
 
 
 | Returns    | Type             | Doc             |
@@ -403,8 +451,8 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 
 ### fast_deconstruct_by_modes
 
-``` python 
-    fast_deconstruct_by_modes(modes_matrix_t,  modes_matrix_dot_t) 
+```python
+   fast_deconstruct_by_modes(modes_matrix_t,  modes_matrix_dot_t)
 ```
 
 
@@ -416,8 +464,8 @@ because of full set of singular values is used.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_matrix_t | numpy.ndarray |             Modes matrix. See Notes. | 
-|         modes_matrix_dot_t | numpy.ndarray |             Linear system matrix. See Notes. | 
+|         modes_matrix_t | Tuple[numpy.ndarray, cupy.ndarray] |             Modes matrix. See Notes. | 
+|         modes_matrix_dot_t | Tuple[numpy.ndarray, cupy.ndarray] |             Linear system matrix. See Notes. | 
 
 
 | Returns    | Type             | Doc             |
@@ -431,17 +479,15 @@ because of full set of singular values is used.
 
 If modes are flatten then modes_matrix_t is calculated as follows
 
-``` python 
-         >>> modes_matrix = np.vstack(modes_list).T
- 
+```python
+        >>> modes_matrix = np.vstack(modes_list).T
 ```
 
 
 Linear system matrix is calculated so
 
-``` python 
-         >>> modes_matrix.T.dot(modes_matrix)
- 
+```python
+        >>> modes_matrix.T.dot(modes_matrix)
 ```
 
 
@@ -457,8 +503,8 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 
 ### construct_by_modes
 
-``` python 
-    construct_by_modes(modes_list, modes_coeffs) 
+```python
+   construct_by_modes(modes_list, modes_coeffs)
 ```
 
 
@@ -466,14 +512,14 @@ Construct self.field from the given modes and modes coefficients.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_list | Tuple[numpy.ndarray, list] |             List of flattened modes. Unified with pyMMF. | 
+|         modes_list | Tuple[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF. | 
 |         modes_coeffs | self.xp.ndarray |             Modes coefficients. | 
 
 
 ### centroid
 
-``` python 
-    centroid() 
+```python
+   centroid()
 ```
 
 
@@ -488,8 +534,8 @@ The centroid is the arithmetic mean of all points weighted by the intensity prof
 
 ### D4sigma
 
-``` python 
-    D4sigma() 
+```python
+   D4sigma()
 ```
 
 
@@ -502,8 +548,8 @@ Return the width <img src="https://render.githubusercontent.com/render/math?math
 
 ### iprofile
 
-``` python 
-    iprofile() 
+```python
+   iprofile()
 ```
 
 
@@ -520,8 +566,8 @@ Return the intensity profile of the field .
 
 ### phiprofile
 
-``` python 
-    phiprofile() 
+```python
+   phiprofile()
 ```
 
 
@@ -538,8 +584,8 @@ Return the phase profile of the field .
 
 ### centroid_intensity
 
-``` python 
-    centroid_intensity() 
+```python
+   centroid_intensity()
 ```
 
 

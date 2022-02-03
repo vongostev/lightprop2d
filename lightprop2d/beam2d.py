@@ -74,11 +74,6 @@ class Beam2D:
         Backend choice.
         If True, the class uses cupy backend with GPU support.
         If False, the class uses numpy backend
-    unsafe_fft : bool = False
-        Check physical correctness of spectrum calculations
-            'Critical K⟂  must be bigger than self.npoints // 2'.
-        If True, this check is disabled
-
     """
 
     area_size: float
@@ -93,7 +88,6 @@ class Beam2D:
     complex_bits: int = 128
 
     use_gpu: bool = False
-    unsafe_fft: bool = False
     numpy_output: bool = True
 
     def __post_init__(self):
@@ -227,7 +221,7 @@ class Beam2D:
 
         Parameters
         ----------
-        data : self.xp.ndarray
+        data : Tuple[numpy.ndarray, cupy.ndarray]
             2d signal data with type of self.complex.
         """
         if _using_pyfftw and not self.use_gpu:
@@ -235,6 +229,57 @@ class Beam2D:
         return self.xp.fft.ifft2(data)
 
     def _update_obj(self, field, spectrum=None):
+        """Fast updating of the beam field and spectrum.
+        Very important for the sequential calculations.
+        For example, with CPU:
+        ```python
+            >>> %timeit b = Beam2D(200, 1024, 0.632, init_field_gen=gaussian_beam, init_gen_args=(1, 50))
+            81 ms ± 527 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+            >>> %timeit a = Beam2D(200, 1024, 0.632, init_field=b.field)
+            55.8 ms ± 2.15 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+            >>> %timeit a._update_obj(b.field)
+            36.4 ms ± 140 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+            >>> %timeit a = Beam2D(200, 1024, 0.632, init_field=b.field, init_spectrum=b.spectrum)
+            17.2 ms ± 211 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+
+            >>> %timeit a._update_obj(b.field, spectrum=b.spectrum)
+            1.12 µs ± 47.8 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+        ```
+
+        And with GPU:
+        ```python
+            >>> %timeit b = Beam2D(200, 1024, 0.632, init_field_gen=gaussian_beam, init_gen_args=(1, 50), use_gpu=True)
+            2.75 ms ± 16.3 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+            >>> %timeit a = Beam2D(200, 1024, 0.632, init_field=b.field, use_gpu=True)
+            2.16 ms ± 63.2 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+
+            >>> %timeit -n10 a._update_obj(b.field)
+            66.6 µs ± 23.1 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+            >>> a = Beam2D(200, 1024, 0.632, init_field=b.field, init_spectrum=b.spectrum, use_gpu=True)
+            1.1 ms ± 44.2 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+
+            >>> %timeit -n10000 a._update_obj(b.field, spectrum=b.spectrum)
+            1.39 µs ± 24 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+        ```
+
+        Parameters
+        ----------
+        field : Tuple[numpy.ndarray, cupy.ndarray]
+            Field distribuion of complex type.
+        spectrum : Tuple[numpy.ndarray, cupy.ndarray], optional
+            Field spatial spectrum of complex type. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.z = 0
         self.field = self._asxp(field)
         if spectrum is None:
             self.spectrum = self._fft2(self.field)
@@ -261,17 +306,12 @@ class Beam2D:
         self.Kz = self.xp.nan_to_num(self.xp.sqrt(
             self.k0**2 - self.Kx**2 - self.Ky**2))
 
-        # k_cryt = self._np(self.xp.trunc(self.area_size / self.wl))
-        # if self.npoints / 2 > k_cryt and not self.unsafe_fft:
-        #     raise ValueError(
-        #         f"Critical K⟂ {k_cryt:g} must be bigger than {self.npoints // 2}")
-
     def coordinate_filter(self, f_init=None, f_gen=None, fargs=()):
         """Apply a mask to the field profile.
 
         Parameters
         ----------
-        f_init : numpy.ndarray, cupy.ndarray, optional
+        f_init : Tuple[numpy.ndarray, cupy.ndarray], optional
             A mask as an array. The default is None.
         f_gen : function, optional
             A function to generate a mask. The default is None.
@@ -280,13 +320,13 @@ class Beam2D:
 
         Notes
         -----
-        The mask function `f_gen` can be user defined and must be in form
-                >>> func(X, Y, *fargs)
+        The mask function `f_gen` can be user defined and must be in form:
+        >>> func(X, Y, *fargs)
+        Where X, Y are 1D grids:
+        >>> X = arange(-npoints // 2, npoints // 2, 1) * dL
+        >>> Y = X.reshape((-1, 1))
 
-            Where X, Y are 1D grids
-                >>> X = arange(-npoints // 2, npoints // 2, 1) * dL
-                >>> Y = X.reshape((-1, 1))
-            For example see **lightprop2d.gaussian_beam**
+        For example see **lightprop2d.gaussian_beam**
         """
         if f_gen is not None:
             assert isinstance(f_gen, object)
@@ -302,16 +342,16 @@ class Beam2D:
 
         Parameters
         ----------
-        f_init : numpy.ndarray, cupy.ndarray, optional
+        f_init : Tuple[numpy.ndarray, cupy.ndarray], optional
             A mask as an array. The default is None.
         f_gen : function, optional
             A function to generate a mask. The default is None.
             The mask function can be user defined and must be in form
-                >>> func(Kx, Ky, *fargs)
+            >>> func(Kx, Ky, *fargs)
 
             Where Kx, Ky are 1D grids
-                >>> Kx = fftfreq(npoints, d=dL)
-                >>> Ky = Kx.reshape((-1, 1))
+            >>> Kx = fftfreq(npoints, d=dL)
+            >>> Ky = Kx.reshape((-1, 1))
         fargs : tuple, optional
             Additional arguments of f_gen function. The default is ().
 
@@ -392,10 +432,10 @@ class Beam2D:
         distance is huge and the beam radius grows dramatically.
 
         Recommended to use it after `self.expand`. For example
-
-        >>> beam.expand(self.area_size * 2)
-        >>> beam.coarse(2)
-
+        ```python
+            >>> beam.expand(self.area_size * 2)
+            >>> beam.coarse(2)
+        ```
         Parameters
         ----------
         mean_order : int, optional
@@ -424,7 +464,7 @@ class Beam2D:
         .. math::A(z) = \int d^2k e^{-ikr - i k_z(r) z} \int A(0)e^{ikr}d^2r
 
         In discrete way we can describe it with FFT:
-            >>> A(z) = iFFT(FFT(A(0)) * exp(- i*kz*z))
+        >>> A(z) = iFFT(FFT(A(0)) * exp(- i*kz*z))
 
         :math:`k_z` must be greater than :math:`\max(k_x),\max(k_y)`
         """
@@ -490,12 +530,12 @@ class Beam2D:
 
         Parameters
         ----------
-        modes_list : Tuple[numpy.ndarray, list]
+        modes_list : Tuple[numpy.ndarray, cupy.ndarray, list]
             List of flattened modes. Unified with pyMMF
 
         Returns
         -------
-        modes_list : numpy.ndarray
+        modes_list : self.xp.ndarray
             List of flattened modes. Unified with pyMMF.
 
         """
@@ -527,7 +567,7 @@ class Beam2D:
 
         Parameters
         ----------
-        modes_list : Tuple[numpy.ndarray, list]
+        modes_list : Tuple[numpy.ndarray, cupy.ndarray, list]
             List of flattened modes. Unified with pyMMF
 
         Returns
@@ -555,10 +595,10 @@ class Beam2D:
 
         Parameters
         ----------
-        modes_matrix_t : numpy.ndarray
+        modes_matrix_t : Tuple[numpy.ndarray, cupy.ndarray]
             Modes matrix. See Notes.
 
-        modes_matrix_dot_t : numpy.ndarray
+        modes_matrix_dot_t : Tuple[numpy.ndarray, cupy.ndarray]
             Linear system matrix. See Notes.
 
         Returns
@@ -598,7 +638,7 @@ class Beam2D:
 
         Parameters
         ----------
-        modes_list : Tuple[numpy.ndarray, list]
+        modes_list : Tuple[numpy.ndarray, cupy.ndarray, list]
             List of flattened modes. Unified with pyMMF.
         modes_coeffs : self.xp.ndarray
             Modes coefficients.

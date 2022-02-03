@@ -8,7 +8,7 @@ You can use both numpy and cupy backends with `use_gpu` key of Beam2D class.
 
 You can install it as follows
 ```
-pip install lightprop2d==1.0.2
+pip install lightprop2d==1.0.3
 ```
 
 If you want to use `cupy` to accelerate calculations, you must install extra packages with a command
