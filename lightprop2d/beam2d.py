@@ -7,12 +7,12 @@ Free-space beam propagation between arbitrarily oriented planes
 based on full diffraction theory : a fast Fourier transform approach.
 JOSA A, 15(4), 857-867.
 """
-
+from collections.abc import Iterable
+from typing import Union, Callable, TypeVar
 import warnings
 import numpy as np
 from dataclasses import dataclass
 from scipy.interpolate import interp2d
-
 
 try:
     import cupy as cp
@@ -306,14 +306,16 @@ class Beam2D:
         self.Kz = self.xp.nan_to_num(self.xp.sqrt(
             self.k0**2 - self.Kx**2 - self.Ky**2))
 
-    def coordinate_filter(self, f_init=None, f_gen=None, fargs=()):
+    def coordinate_filter(self, f_init: Union[np.ndarray, cp.ndarray] = None,
+                          f_gen: Union[TypeVar("FilterComposer"), Callable] = None,
+                          fargs: tuple = ()) -> None:
         """Apply a mask to the field profile.
 
         Parameters
         ----------
-        f_init : Tuple[numpy.ndarray, cupy.ndarray], optional
+        f_init : Union[numpy.ndarray, cupy.ndarray], optional
             A mask as an array. The default is None.
-        f_gen : function, optional
+        f_gen : Union[TypeVar("FilterComposer"), Callable], optional
             A function to generate a mask. The default is None.
         fargs : tuple, optional
             Additional arguments of f_gen function. The default is ().
@@ -329,22 +331,24 @@ class Beam2D:
         For example see **lightprop2d.gaussian_beam**
         """
         if f_gen is not None:
-            assert isinstance(f_gen, object)
-            assert isinstance(fargs, (tuple, list))
+            assert callable(f_gen)
+            assert isinstance(fargs, Iterable)
             self.field *= f_gen(self.X, self.Y, *fargs)
         if f_init is not None:
             assert isinstance(f_init, (np.ndarray, self.xp.ndarray))
             self.field *= self._asxp(f_init)
         self.spectrum = self._fft2(self.field)
 
-    def spectral_filter(self, f_init=None, f_gen=None, fargs=()):
+    def spectral_filter(self, f_init: Union[np.ndarray, cp.ndarray] = None,
+                        f_gen: Union[TypeVar("FilterComposer"), Callable] = None,
+                        fargs: tuple = ()) -> None:
         """Apply a mask to the field spectrum.
 
         Parameters
         ----------
-        f_init : Tuple[numpy.ndarray, cupy.ndarray], optional
+        f_init : Union[numpy.ndarray, cupy.ndarray], optional
             A mask as an array. The default is None.
-        f_gen : function, optional
+        f_gen : Union[TypeVar("FilterComposer"), Callable], optional
             A function to generate a mask. The default is None.
             The mask function can be user defined and must be in form
             >>> func(Kx, Ky, *fargs)
@@ -357,8 +361,11 @@ class Beam2D:
 
         """
         if f_gen is not None:
+            assert callable(f_gen)
+            assert isinstance(fargs, Iterable)
             self.spectrum *= f_gen(self.Kx, self.Ky, *fargs)
         if f_init is not None:
+            assert isinstance(f_init, (np.ndarray, self.xp.ndarray))
             self.spectrum *= self._asxp(f_init)
         self.field = self._ifft2(self.spectrum)
 

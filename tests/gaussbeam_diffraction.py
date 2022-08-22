@@ -28,7 +28,7 @@ R = 0.1 * mm
 
 
 beam = Beam2D(area_size, npoints, wl0, init_field_gen=gaussian_beam,
-              init_gen_args=(1, R), use_gpu=1)
+              init_gen_args=(1, R), use_gpu=False)
 # beam = Beam2D(area_size, npoints, wl0, init_field_gen=plane_wave, use_gpu=1)
 plt.imshow(beam.iprofile)
 plt.show()
