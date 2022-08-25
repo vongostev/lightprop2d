@@ -4,9 +4,7 @@ Created on Tue Jun 22 15:21:29 2021
 
 @author: vonGostev
 """
-from collections.abc import Iterable
-from typing import Union, Callable, Any
-from functools import reduce
+from typing import Union, Any
 
 import numpy as np
 try:
@@ -17,7 +15,7 @@ except ImportError:
 __all__ = ('plane_wave', 'random_wave', 'random_wave_bin', 'gaussian_beam',
            'round_hole', 'random_round_hole', 'random_round_hole_bin',
            'random_round_hole_phase', 'rectangle_hole', 'square_hole',
-           'square_slits', 'FilterComposer')
+           'square_slits')
 
 
 def _get_array_module(x: Union[np.ndarray, cp.ndarray]
@@ -56,7 +54,7 @@ def random_wave(x: Union[np.ndarray, cp.ndarray],
                 y: Union[np.ndarray, cp.ndarray], binning_order: int = 1
                 ) -> Union['np.ndarray[Any]', 'cp.ndarray[Any]']:
     xp = _get_array_module(x)
-    return binning(xp.random.random(
+    return binning(xp.random.uniform(
         size=(
             int(len(y) // binning_order),
             int(len(x) // binning_order))),
@@ -136,58 +134,3 @@ def square_slits(x: Union[np.ndarray, cp.ndarray],
                  ) -> Union['np.ndarray[np.bool]', 'cp.ndarray[np.bool]']:
     dl = slits_distance / 2
     return square_hole(x, y, d, x0 - dl, y0) | square_hole(x, y, d, x0 + dl, y0)
-
-
-class FilterComposer:
-
-    slots = ('_fs', '_args', 'f')
-
-    def __init__(self, funcs: Union[list, Callable], fargs: Iterable, strategy: str = '|'):
-        super().__init__()
-
-        if funcs is None or (isinstance(funcs, Iterable) and len(funcs) == 0):
-            raise ValueError("Function list is empty")
-
-        if strategy not in ['|', '&']:
-            raise ValueError('Unknown strategy of filters composition')
-
-        if strategy == '|':
-            self._r = lambda x, y: x.astype(float) + y.astype(float)
-        elif strategy == '&':
-            self._r = lambda x, y: x.astype(float) * y.astype(float)
-
-        if callable(funcs):
-            self.f = lambda X, Y: funcs(X, Y, *fargs)
-            return
-
-        if len(fargs) == 0:
-            self.f = self.__construct_from_flatten_fargs(funcs, fargs)
-            return
-
-        if not isinstance(fargs[0], Iterable):
-            self.f = self.__construct_from_flatten_fargs(funcs, fargs)
-            return
-        else:
-            self.f = self.__construct_from_different_fargs(funcs, fargs)
-            return
-
-        self._fs = funcs
-        self._args = fargs
-
-    def __construct_from_flatten_fargs(self, funcs, fargs):
-        def _f(X, Y):
-            return reduce(self._r, [f(X, Y, *fargs) for f in funcs])
-        return _f
-
-    def __construct_from_different_fargs(self, funcs, fargs):
-        if len(funcs) != len(fargs):
-            raise ValueError(
-                f"Length {len(funcs)} of function list is not equal {len(fargs)}")
-
-        def _f(X, Y):
-            return reduce(
-                self._r, [f(X, Y, *args) for f, args in zip(funcs, fargs)])
-        return _f
-
-    def __call__(self, X, Y, *args, **kwargs):
-        return self.f(X, Y)
