@@ -8,7 +8,7 @@ based on full diffraction theory : a fast Fourier transform approach.
 JOSA A, 15(4), 857-867.
 """
 from collections.abc import Iterable
-from typing import Union, Callable, TypeVar
+from typing import Union, Callable, TypeVar, Tuple
 import warnings
 import numpy as np
 from dataclasses import dataclass
@@ -132,12 +132,12 @@ class Beam2D:
         else:
             self.spectrum = self.init_spectrum
 
-    def _np(self, data):
+    def _np(self, data: Union[np.ndarray, cp.ndarray]) -> np.ndarray:
         """Convert cupy or numpy arrays to numpy array.
 
         Parameters
         ----------
-        data : Tuple[numpy.ndarray, cupy.ndarray]
+        data : Union[numpy.ndarray, cupy.ndarray]
             Input data.
 
         Returns
@@ -151,12 +151,12 @@ class Beam2D:
             return data.get()
         return data
 
-    def _asxp(self, data):
+    def _asxp(self, data: Union[np.ndarray, cp.ndarray]) -> 'self.xp.ndarray':
         """Convert cupy or numpy arrays to self.xp array.
 
         Parameters
         ----------
-        data : Tuple[numpy.ndarray, cupy.ndarray]
+        data : Union[numpy.ndarray, cupy.ndarray]
             Input data.
 
         Raises
@@ -204,7 +204,7 @@ class Beam2D:
         """
         return self.xp.fft.fftfreq(npoints, d=dL)
 
-    def _fft2(self, data):
+    def _fft2(self, data: Union[np.ndarray, cp.ndarray]):
         """2D FFT alias with a choice of the fft module.
 
         Parameters
@@ -216,19 +216,20 @@ class Beam2D:
             return fft2(data, **_fftargs)
         return self.xp.fft.fft2(data)
 
-    def _ifft2(self, data):
+    def _ifft2(self, data: 'self.xp.ndarray'):
         """2D Inverse FFT alias with a choice of the fft module.
 
         Parameters
         ----------
-        data : Tuple[numpy.ndarray, cupy.ndarray]
+        data : Union[numpy.ndarray, cupy.ndarray]
             2d signal data with type of self.complex.
         """
         if _using_pyfftw and not self.use_gpu:
             return ifft2(data, **_fftargs)
         return self.xp.fft.ifft2(data)
 
-    def _update_obj(self, field, spectrum=None):
+    def _update_obj(self, field: Union[np.ndarray, cp.ndarray],
+                    spectrum: Union[np.ndarray, cp.ndarray] = None):
         """Fast updating of the beam field and spectrum.
         Very important for the sequential calculations.
         For example, with CPU:
@@ -269,9 +270,9 @@ class Beam2D:
 
         Parameters
         ----------
-        field : Tuple[numpy.ndarray, cupy.ndarray]
+        field : Union[numpy.ndarray, cupy.ndarray]
             Field distribuion of complex type.
-        spectrum : Tuple[numpy.ndarray, cupy.ndarray], optional
+        spectrum : Union[numpy.ndarray, cupy.ndarray], optional
             Field spatial spectrum of complex type. The default is None.
 
         Returns
@@ -307,7 +308,8 @@ class Beam2D:
             self.k0**2 - self.Kx**2 - self.Ky**2))
 
     def coordinate_filter(self, f_init: Union[np.ndarray, cp.ndarray] = None,
-                          f_gen: Union[TypeVar("FilterComposer"), Callable] = None,
+                          f_gen: Union[TypeVar(
+                              "FilterComposer"), Callable] = None,
                           fargs: tuple = ()) -> None:
         """Apply a mask to the field profile.
 
@@ -340,7 +342,8 @@ class Beam2D:
         self.spectrum = self._fft2(self.field)
 
     def spectral_filter(self, f_init: Union[np.ndarray, cp.ndarray] = None,
-                        f_gen: Union[TypeVar("FilterComposer"), Callable] = None,
+                        f_gen: Union[TypeVar(
+                            "FilterComposer"), Callable] = None,
                         fargs: tuple = ()) -> None:
         """Apply a mask to the field spectrum.
 
@@ -532,12 +535,13 @@ class Beam2D:
             (self.xp.cos(phase) + 1j * self.xp.sin(phase))
         self.spectrum = self._fft2(self.field)
 
-    def _expand_basis(self, modes_list):
+    def _expand_basis(
+            self, modes_list: Union[np.ndarray, cp.ndarray, list]) -> 'self.xp.ndarray':
         """Expand modes basis to the self.npoints.        
 
         Parameters
         ----------
-        modes_list : Tuple[numpy.ndarray, cupy.ndarray, list]
+        modes_list : Union[numpy.ndarray, cupy.ndarray, list]
             List of flattened modes. Unified with pyMMF
 
         Returns
@@ -558,7 +562,8 @@ class Beam2D:
             return np.array(expanded_modes_list)
         return self.xp.array([m.reshape((Nb, Nb)) for m in modes_list])
 
-    def deconstruct_by_modes(self, modes_list):
+    def deconstruct_by_modes(
+            self, modes_list: Union[np.ndarray, cp.ndarray, list]) -> 'self.xp.ndarray':
         r"""Return decomposed coefficients in given mode basis as a least-square solution.
 
         Here denoted :math:`\mathbf{M}(r)` is the given mode basis,
@@ -574,7 +579,7 @@ class Beam2D:
 
         Parameters
         ----------
-        modes_list : Tuple[numpy.ndarray, cupy.ndarray, list]
+        modes_list : Union[numpy.ndarray, cupy.ndarray, list]
             List of flattened modes. Unified with pyMMF
 
         Returns
@@ -593,7 +598,10 @@ class Beam2D:
             modes_matrix, flatten_field, rcond=-1)[0]
         return self.modes_coeffs
 
-    def fast_deconstruct_by_modes(self, modes_matrix_t,  modes_matrix_dot_t):
+    def fast_deconstruct_by_modes(
+            self, 
+            modes_matrix_t: Union[np.ndarray, cp.ndarray],
+            modes_matrix_dot_t: Union[np.ndarray, cp.ndarray]) -> 'self.xp.ndarray':
         r"""Return decomposed coefficients in given mode basis as a least-square solution. Fast version.
 
         Fast version with pre-computations
@@ -602,10 +610,10 @@ class Beam2D:
 
         Parameters
         ----------
-        modes_matrix_t : Tuple[numpy.ndarray, cupy.ndarray]
+        modes_matrix_t : Union[numpy.ndarray, cupy.ndarray]
             Modes matrix. See Notes.
 
-        modes_matrix_dot_t : Tuple[numpy.ndarray, cupy.ndarray]
+        modes_matrix_dot_t : Union[numpy.ndarray, cupy.ndarray]
             Linear system matrix. See Notes.
 
         Returns
@@ -640,12 +648,15 @@ class Beam2D:
             modes_matrix_dot_t, modes_matrix_t.dot(flatten_field), rcond=-1)[0]
         return self.modes_coeffs
 
-    def construct_by_modes(self, modes_list, modes_coeffs):
+    def construct_by_modes(
+            self, 
+            modes_list: Union[np.ndarray, cp.ndarray, list], 
+            modes_coeffs: Union[np.ndarray, cp.ndarray, list]):
         """Construct self.field from the given modes and modes coefficients.
 
         Parameters
         ----------
-        modes_list : Tuple[numpy.ndarray, cupy.ndarray, list]
+        modes_list : Union[numpy.ndarray, cupy.ndarray, list]
             List of flattened modes. Unified with pyMMF.
         modes_coeffs : self.xp.ndarray
             Modes coefficients.
@@ -657,7 +668,7 @@ class Beam2D:
         self.spectrum = self._fft2(self.field)
 
     @property
-    def centroid(self):
+    def centroid(self) -> Tuple[float, float, int, int]:
         """Return the centroid of the intensity distribution.
 
         The centroid is the arithmetic mean of all points weighted by the intensity profile.
@@ -675,12 +686,12 @@ class Beam2D:
         return Xc, Yc, int(Xc / self.dL) + n, int(Yc / self.dL) + n
 
     @property
-    def D4sigma(self):
+    def D4sigma(self) -> Tuple[float, float]:
         r"""Return the width :math:`D=4\sigma` of the intensity distribution.
 
         Returns
         -------
-        D4sigma : (float, float)
+        D4sigma : Tuple[float, float]
             Diameter of the beam by x and y axes.
         """
         n = self.npoints // 2
@@ -694,7 +705,7 @@ class Beam2D:
         return 4 * sigma(X, Xc), 4 * sigma(Y, Yc)
 
     @property
-    def iprofile(self):
+    def iprofile(self) -> np.ndarray:
         """Return the intensity profile of the field A
 
         .. math::I(r)=|A(r)|^2
@@ -711,7 +722,7 @@ class Beam2D:
             return profile
 
     @property
-    def phiprofile(self):
+    def phiprofile(self) -> np.ndarray:
         """Return the phase profile of the field A
 
         .. math::\varphi(r)=\text{arg}(A(r))
@@ -728,7 +739,7 @@ class Beam2D:
             return profile
 
     @property
-    def centroid_intensity(self):
+    def centroid_intensity(self) -> float:
         """Return the intensity value in the centroid coordinates.
 
         .. math::I_c=|A(Xc,Yc)|^2
@@ -741,7 +752,7 @@ class Beam2D:
         _, _, nxc, nyc = self.centroid
         return self.iprofile[nyc, nxc].tolist()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (f"Beam {self.npoints:d}x{self.npoints:d} points" +
                 f"\n\t{self.area_size:.3g}x{self.area_size:.3g} cm " +
                 f"\n\t<wl={self.wl / nm:.3g} nm, z={self.z:.3g} cm>")

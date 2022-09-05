@@ -70,7 +70,7 @@ You can use both numpy and cupy backends with use_gpu key of the class.
 ### _np
 
 ```python
-   _np(data)
+   _np(data: Union[np.ndarray, cp.ndarray]) -> np.ndarray
 ```
 
 
@@ -78,7 +78,7 @@ Convert cupy or numpy arrays to numpy array.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         data | Tuple[numpy.ndarray, cupy.ndarray] |             Input data. | 
+|         data | Union[numpy.ndarray, cupy.ndarray] |             Input data. | 
 
 
 | Returns    | Type             | Doc             |
@@ -89,7 +89,7 @@ Convert cupy or numpy arrays to numpy array.
 ### _asxp
 
 ```python
-   _asxp(data)
+   _asxp(data: Union[np.ndarray, cp.ndarray]) -> '.xp.ndarray'
 ```
 
 
@@ -97,7 +97,7 @@ Convert cupy or numpy arrays to self.xp array.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         data | Tuple[numpy.ndarray, cupy.ndarray] |             Input data. | 
+|         data | Union[numpy.ndarray, cupy.ndarray] |             Input data. | 
 
 
 | Returns    | Type             | Doc             |
@@ -128,7 +128,7 @@ Return a grid for Kx or Ky values.
 ### _fft2
 
 ```python
-   _fft2(data)
+   _fft2(data: Union[np.ndarray, cp.ndarray])
 ```
 
 
@@ -142,7 +142,7 @@ Return a grid for Kx or Ky values.
 ### _ifft2
 
 ```python
-   _ifft2(data)
+   _ifft2(data: '.xp.ndarray')
 ```
 
 
@@ -150,13 +150,13 @@ Return a grid for Kx or Ky values.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         data | Tuple[numpy.ndarray, cupy.ndarray] |             2d signal data with type of self.complex. | 
+|         data | Union[numpy.ndarray, cupy.ndarray] |             2d signal data with type of self.complex. | 
 
 
 ### _update_obj
 
 ```python
-   _update_obj(field, spectrum=None)
+   _update_obj(field: Union[np.ndarray, cp.ndarray]
 ```
 
 
@@ -192,8 +192,8 @@ And with GPU:
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         field | Tuple[numpy.ndarray, cupy.ndarray] |             Field distribuion of complex type. | 
-|         spectrum | Tuple[numpy.ndarray, cupy.ndarray], optional |             Field spatial spectrum of complex type. The default is None. | 
+|         field | Union[numpy.ndarray, cupy.ndarray] |             Field distribuion of complex type. | 
+|         spectrum | Union[numpy.ndarray, cupy.ndarray], optional |             Field spatial spectrum of complex type. The default is None. | 
 
 
 | Returns    | Type             | Doc             |
@@ -212,7 +212,7 @@ Construction of X, Y, Kx, Ky grids.
 ### coordinate_filter
 
 ```python
-   coordinate_filter(f_init=None, f_gen=None, fargs=())
+   coordinate_filter(f_init: Union[np.ndarray, cp.ndarray] = None
 ```
 
 
@@ -220,8 +220,8 @@ Apply a mask to the field profile.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         f_init | Tuple[numpy.ndarray, cupy.ndarray], optional |             A mask as an array. The default is None. | 
-|         f_gen | function, optional |             A function to generate a mask. The default is None. | 
+|         f_init | Union[numpy.ndarray, cupy.ndarray], optional |             A mask as an array. The default is None. | 
+|         f_gen | Union[TypeVar("FilterComposer"), Callable], optional |             A function to generate a mask. The default is None. | 
 |         fargs | tuple, optional |             Additional arguments of f_gen function. The default is (). | 
 
 
@@ -252,7 +252,7 @@ For example see **lightprop2d.gaussian_beam**
 ### spectral_filter
 
 ```python
-   spectral_filter(f_init=None, f_gen=None, fargs=())
+   spectral_filter(f_init: Union[np.ndarray, cp.ndarray] = None
 ```
 
 
@@ -260,8 +260,8 @@ Apply a mask to the field spectrum.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         f_init | Tuple[numpy.ndarray, cupy.ndarray], optional |             A mask as an array. The default is None. | 
-|         f_gen | function, optional |             A function to generate a mask. The default is None.            The mask function can be user defined and must be in form            >>> func(Kx, Ky, *fargs)            Where Kx, Ky are 1D grids            >>> Kx = fftfreq(npoints, d=dL)            >>> Ky = Kx.reshape((-1, 1)) | 
+|         f_init | Union[numpy.ndarray, cupy.ndarray], optional |             A mask as an array. The default is None. | 
+|         f_gen | Union[TypeVar("FilterComposer"), Callable], optional |             A function to generate a mask. The default is None.            The mask function can be user defined and must be in form            >>> func(Kx, Ky, *fargs)            Where Kx, Ky are 1D grids            >>> Kx = fftfreq(npoints, d=dL)            >>> Ky = Kx.reshape((-1, 1)) | 
 |         fargs | tuple, optional |             Additional arguments of f_gen function. The default is (). | 
 
 
@@ -403,7 +403,7 @@ Image transmitting through the lens between optically conjugated planes.
 ### _expand_basis
 
 ```python
-   _expand_basis(modes_list)
+   _expand_basis(            , modes_list: Union[np.ndarray, cp.ndarray, list]) -> '.xp.ndarray'
 ```
 
 
@@ -411,7 +411,7 @@ Expand modes basis to the self.npoints.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_list | Tuple[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
+|         modes_list | Union[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
 
 
 | Returns    | Type             | Doc             |
@@ -422,7 +422,7 @@ Expand modes basis to the self.npoints.
 ### deconstruct_by_modes
 
 ```python
-   deconstruct_by_modes(modes_list)
+   deconstruct_by_modes(            , modes_list: Union[np.ndarray, cp.ndarray, list]) -> '.xp.ndarray'
 ```
 
 
@@ -441,7 +441,7 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_list | Tuple[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
+|         modes_list | Union[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
 
 
 | Returns    | Type             | Doc             |
@@ -452,7 +452,7 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 ### fast_deconstruct_by_modes
 
 ```python
-   fast_deconstruct_by_modes(modes_matrix_t,  modes_matrix_dot_t)
+   fast_deconstruct_by_modes(            ,             modes_matrix_t: Union[np.ndarray, cp.ndarray]
 ```
 
 
@@ -464,8 +464,8 @@ because of full set of singular values is used.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_matrix_t | Tuple[numpy.ndarray, cupy.ndarray] |             Modes matrix. See Notes. | 
-|         modes_matrix_dot_t | Tuple[numpy.ndarray, cupy.ndarray] |             Linear system matrix. See Notes. | 
+|         modes_matrix_t | Union[numpy.ndarray, cupy.ndarray] |             Modes matrix. See Notes. | 
+|         modes_matrix_dot_t | Union[numpy.ndarray, cupy.ndarray] |             Linear system matrix. See Notes. | 
 
 
 | Returns    | Type             | Doc             |
@@ -504,7 +504,7 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 ### construct_by_modes
 
 ```python
-   construct_by_modes(modes_list, modes_coeffs)
+   construct_by_modes(            ,             modes_list: Union[np.ndarray, cp.ndarray, list],
 ```
 
 
@@ -512,14 +512,14 @@ Construct self.field from the given modes and modes coefficients.
 
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         modes_list | Tuple[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF. | 
+|         modes_list | Union[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF. | 
 |         modes_coeffs | self.xp.ndarray |             Modes coefficients. | 
 
 
 ### centroid
 
 ```python
-   centroid()
+   centroid() -> Tuple[float, float, int, int]
 ```
 
 
@@ -535,7 +535,7 @@ The centroid is the arithmetic mean of all points weighted by the intensity prof
 ### D4sigma
 
 ```python
-   D4sigma()
+   D4sigma() -> Tuple[float, float]
 ```
 
 
@@ -543,13 +543,13 @@ Return the width <img src="https://render.githubusercontent.com/render/math?math
 
 | Returns    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
-|         D4sigma | (float, float) |             Diameter of the beam by x and y axes. | 
+|         D4sigma | Tuple[float, float] |             Diameter of the beam by x and y axes. | 
 
 
 ### iprofile
 
 ```python
-   iprofile()
+   iprofile() -> np.ndarray
 ```
 
 
@@ -567,7 +567,7 @@ Return the intensity profile of the field .
 ### phiprofile
 
 ```python
-   phiprofile()
+   phiprofile() -> np.ndarray
 ```
 
 
@@ -585,7 +585,7 @@ Return the phase profile of the field .
 ### centroid_intensity
 
 ```python
-   centroid_intensity()
+   centroid_intensity() -> float
 ```
 
 
