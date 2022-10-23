@@ -563,7 +563,7 @@ class Beam2D:
         return self.xp.array([m.reshape((Nb, Nb)) for m in modes_list])
 
     def deconstruct_by_modes(
-            self, modes_list: Union[np.ndarray, cp.ndarray, list]) -> 'self.xp.ndarray':
+            self, modes_list: Union[np.ndarray, cp.ndarray, list], mode : str='scalar') -> 'self.xp.ndarray':
         r"""Return decomposed coefficients in given mode basis as a least-square solution.
 
         Here denoted :math:`\mathbf{M}(r)` is the given mode basis,
@@ -582,6 +582,11 @@ class Beam2D:
         modes_list : Union[numpy.ndarray, cupy.ndarray, list]
             List of flattened modes. Unified with pyMMF
 
+        mode : str, default is `scalar`
+            Mode of calculation of modes coefficients
+
+                `scalar` - by scalar product, `lstsq` - by least square optimization
+
         Returns
         -------
         modes_list : self.xp.ndarray
@@ -590,12 +595,15 @@ class Beam2D:
         modes_array = self._asxp(modes_list)
         Nb = np.sqrt(len(modes_list[0])).astype(int)
         dN = (self.npoints - Nb) // 2
-        modes_matrix = self.xp.vstack(modes_array).T
+        modes_matrix = self.xp.vstack(modes_array)
         flatten_field = \
             self.field[dN:self.npoints - dN,
                        dN:self.npoints - dN].flatten()
-        self.modes_coeffs = self.xp.linalg.lstsq(
-            modes_matrix, flatten_field, rcond=-1)[0]
+        if mode == 'scalar':
+            self.modes_coeffs = modes_matrix @ flatten_field
+        elif mode == 'lstsq':
+            self.modes_coeffs = self.xp.linalg.lstsq(
+                modes_matrix.T, flatten_field, rcond=-1)[0]
         return self.modes_coeffs
 
     def fast_deconstruct_by_modes(
@@ -645,7 +653,7 @@ class Beam2D:
             self.field[dN:self.npoints - dN,
                        dN:self.npoints - dN].flatten()
         self.modes_coeffs = self.xp.linalg.lstsq(
-            modes_matrix_dot_t, modes_matrix_t.dot(flatten_field), rcond=-1)[0]
+            modes_matrix_dot_t, modes_matrix_t.dot(flatten_field), rcond=None)[0]
         return self.modes_coeffs
 
     def construct_by_modes(

@@ -422,7 +422,7 @@ Expand modes basis to the self.npoints.
 ### deconstruct_by_modes
 
 ```python
-   deconstruct_by_modes(            , modes_list: Union[np.ndarray, cp.ndarray, list]) -> '.xp.ndarray'
+   deconstruct_by_modes(            , modes_list: Union[np.ndarray, cp.ndarray, list], mode : str='scalar') -> '.xp.ndarray'
 ```
 
 
@@ -442,6 +442,7 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
 |         modes_list | Union[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
+|         mode | str, default is `scalar` |             Mode of calculation of modes coefficients                `scalar` - by scalar product, `lstsq` - by least square optimization | 
 
 
 | Returns    | Type             | Doc             |
