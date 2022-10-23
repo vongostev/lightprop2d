@@ -403,7 +403,7 @@ Image transmitting through the lens between optically conjugated planes.
 ### _expand_basis
 
 ```python
-   _expand_basis(            , modes_list: Union[np.ndarray, cp.ndarray, list]) -> '.xp.ndarray'
+   _expand_basis(modes_list: Union[np.ndarray, cp.ndarray, list]) -> '.xp.ndarray'
 ```
 
 
@@ -422,7 +422,7 @@ Expand modes basis to the self.npoints.
 ### deconstruct_by_modes
 
 ```python
-   deconstruct_by_modes(            , modes_list: Union[np.ndarray, cp.ndarray, list], mode : str='scalar') -> '.xp.ndarray'
+   deconstruct_by_modes(modes_list: Union[np.ndarray, cp.ndarray, list], mode : str='scalar') -> '.xp.ndarray'
 ```
 
 
@@ -442,7 +442,7 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 | Parameters    | Type             | Doc             |
 |:-------|:-----------------|:----------------|
 |         modes_list | Union[numpy.ndarray, cupy.ndarray, list] |             List of flattened modes. Unified with pyMMF | 
-|         mode | str, default is `scalar` |             Mode of calculation of modes coefficients                `scalar` - by scalar product, `lstsq` - by least square optimization | 
+|         mode | str, default is `scalar` |             Mode of calculation of modes coefficients.                `scalar` - by scalar product, `lstsq` - by least square optimization | 
 
 
 | Returns    | Type             | Doc             |
@@ -453,7 +453,7 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 ### fast_deconstruct_by_modes
 
 ```python
-   fast_deconstruct_by_modes(            ,             modes_matrix_t: Union[np.ndarray, cp.ndarray]
+   fast_deconstruct_by_modes(modes_matrix_t: Union[np.ndarray, cp.ndarray], modes_matrix_dot_t: Union[np.ndarray, cp.ndarray]) -> '.xp.ndarray'
 ```
 
 
@@ -505,7 +505,7 @@ Where <img src="https://render.githubusercontent.com/render/math?math=\mathbf{C}
 ### construct_by_modes
 
 ```python
-   construct_by_modes(            ,             modes_list: Union[np.ndarray, cp.ndarray, list],
+   construct_by_modes(modes_list: Union[np.ndarray, cp.ndarray, list], modes_coeffs: Union[np.ndarray, cp.ndarray, list])
 ```
 
 

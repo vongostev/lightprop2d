@@ -535,8 +535,7 @@ class Beam2D:
             (self.xp.cos(phase) + 1j * self.xp.sin(phase))
         self.spectrum = self._fft2(self.field)
 
-    def _expand_basis(
-            self, modes_list: Union[np.ndarray, cp.ndarray, list]) -> 'self.xp.ndarray':
+    def _expand_basis(self, modes_list: Union[np.ndarray, cp.ndarray, list]) -> 'self.xp.ndarray':
         """Expand modes basis to the self.npoints.        
 
         Parameters
@@ -562,8 +561,7 @@ class Beam2D:
             return np.array(expanded_modes_list)
         return self.xp.array([m.reshape((Nb, Nb)) for m in modes_list])
 
-    def deconstruct_by_modes(
-            self, modes_list: Union[np.ndarray, cp.ndarray, list], mode : str='scalar') -> 'self.xp.ndarray':
+    def deconstruct_by_modes(self, modes_list: Union[np.ndarray, cp.ndarray, list], mode : str='scalar') -> 'self.xp.ndarray':
         r"""Return decomposed coefficients in given mode basis as a least-square solution.
 
         Here denoted :math:`\mathbf{M}(r)` is the given mode basis,
@@ -583,8 +581,7 @@ class Beam2D:
             List of flattened modes. Unified with pyMMF
 
         mode : str, default is `scalar`
-            Mode of calculation of modes coefficients
-
+            Mode of calculation of modes coefficients.
                 `scalar` - by scalar product, `lstsq` - by least square optimization
 
         Returns
@@ -606,10 +603,7 @@ class Beam2D:
                 modes_matrix.T, flatten_field, rcond=-1)[0]
         return self.modes_coeffs
 
-    def fast_deconstruct_by_modes(
-            self, 
-            modes_matrix_t: Union[np.ndarray, cp.ndarray],
-            modes_matrix_dot_t: Union[np.ndarray, cp.ndarray]) -> 'self.xp.ndarray':
+    def fast_deconstruct_by_modes(self, modes_matrix_t: Union[np.ndarray, cp.ndarray], modes_matrix_dot_t: Union[np.ndarray, cp.ndarray]) -> 'self.xp.ndarray':
         r"""Return decomposed coefficients in given mode basis as a least-square solution. Fast version.
 
         Fast version with pre-computations
@@ -656,10 +650,7 @@ class Beam2D:
             modes_matrix_dot_t, modes_matrix_t.dot(flatten_field), rcond=None)[0]
         return self.modes_coeffs
 
-    def construct_by_modes(
-            self, 
-            modes_list: Union[np.ndarray, cp.ndarray, list], 
-            modes_coeffs: Union[np.ndarray, cp.ndarray, list]):
+    def construct_by_modes(self, modes_list: Union[np.ndarray, cp.ndarray, list], modes_coeffs: Union[np.ndarray, cp.ndarray, list]):
         """Construct self.field from the given modes and modes coefficients.
 
         Parameters
